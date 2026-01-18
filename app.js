@@ -69,6 +69,25 @@ class POSSystem {
         }
         this.saveData();
     }
+
+    async refreshStoreSettingsFromFirebase() {
+        try {
+            const response = await fetch('https://poss-2b64e-default-rtdb.asia-southeast1.firebasedatabase.app/posData.json');
+            if (!response.ok) {
+                return;
+            }
+            const firebaseData = await response.json();
+            if (firebaseData && firebaseData.store) {
+                this.data.store = { ...this.data.store, ...firebaseData.store };
+            }
+            if (firebaseData && firebaseData.settings) {
+                this.data.settings = { ...this.data.settings, ...firebaseData.settings };
+            }
+            localStorage.setItem('posData', JSON.stringify(this.data));
+        } catch (error) {
+            console.warn('Could not refresh settings from Firebase:', error);
+        }
+    }
     
     getDefaultData() {
         return {
@@ -403,7 +422,9 @@ class POSSystem {
                 this.renderAnalytics();
                 break;
             case 'settings':
-                this.loadSettings();
+                this.refreshStoreSettingsFromFirebase()
+                    .then(() => this.loadSettings())
+                    .catch(() => this.loadSettings());
                 break;
         }
     }
