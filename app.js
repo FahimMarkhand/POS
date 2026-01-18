@@ -653,7 +653,7 @@ class POSSystem {
         
         let receiptHTML = `
             <div class="receipt-header">
-                <img src="${baseUrl}resources/r-LOGO.jpg" alt="${this.data.store.name}" class="receipt-logo" style="width: 180px; height: 180px; border-radius: 50%;">
+                <img src="${baseUrl}resources/R-LOGO.png" alt="${this.data.store.name}" class="receipt-logo" style="width: 180px; height: 180px; border-radius: 50%;">
                 <div class="receipt-store-name">${this.data.store.name}</div>
                 <div class="receipt-store-info">${this.data.store.address}</div>
                 <div class="receipt-store-info">${this.data.store.phone}</div>
@@ -712,8 +712,14 @@ class POSSystem {
     }
     
     printReceipt() {
+        // Validate receipt is ready
+        if (!this.tempOrder) {
+            this.showToast('No order to print. Please create an order first.', 'error');
+            return;
+        }
+        
         // Save the order to database when print is confirmed
-        if (this.tempOrder) {
+        try {
             this.data.orders.push(this.tempOrder);
             this.data.settings.nextOrderNumber += 1;
             this.saveData();
@@ -722,19 +728,24 @@ class POSSystem {
             this.renderCart();
             this.updateCartSummary();
             
-            this.showToast(`Order ${this.tempOrder.id} completed successfully!`, 'success');
+            this.showToast(`Order ${this.tempOrder.id} being sent to printer...`, 'info');
+            
+            // Use the thermal printer settings
+            this.performPrint();
+            
+            // Close modal after printing
+            setTimeout(() => {
+                this.closeReceiptModal();
+                this.filterSales();
+                this.updateAnalytics();
+                this.showToast(`Order ${this.tempOrder.id} completed successfully!`, 'success');
+            }, 500);
+            
             this.tempOrder = null;
+        } catch (error) {
+            console.error('Error in printReceipt:', error);
+            this.showToast('Error processing print. Please check console for details.', 'error');
         }
-        
-        // Use the thermal printer settings
-        this.performPrint();
-        
-        // Close modal after printing
-        setTimeout(() => {
-            this.closeReceiptModal();
-            this.filterSales();
-            this.updateAnalytics();
-        }, 500);
     }
     
     renderSales() {
@@ -859,6 +870,13 @@ class POSSystem {
         const order = this.data.orders.find(o => o.id === orderId);
         if (order) {
             this.showReceipt(order);
+            // Open modal to allow user to print
+            const modal = document.getElementById('receiptModal');
+            if (modal) {
+                modal.classList.add('active');
+            }
+        } else {
+            this.showToast('Order not found', 'error');
         }
     }
     
@@ -1255,45 +1273,66 @@ class POSSystem {
     }
     
     testPrint() {
-        this.showToast('Printing test page...', 'info');
+        this.showToast('Opening print dialog for test page...', 'info');
+        console.log('Test Print initiated');
+        console.log('Printer Settings:', this.data.settings);
         
         // Create a simple test receipt
         const testContent = `
             <div class="receipt-header" style="text-align: center; margin-bottom: 10px;">
-                <div style="font-size: 14px; font-weight: bold;">Test Print Page</div>
-                <div style="font-size: 11px;">Naseeb Biryani & Pakwan Center</div>
+                <div style="font-size: 14px; font-weight: bold;">TEST PRINT PAGE</div>
+                <div style="font-size: 11px;">${this.data.store.name}</div>
+                <div style="font-size: 10px;">${this.data.store.address}</div>
+                <div style="font-size: 10px;">${this.data.store.phone}</div>
             </div>
             <div style="font-size: 11px; border-bottom: 1px dashed #999; padding-bottom: 8px; margin-bottom: 8px;">
                 <div>Test Order: ORD-TEST-001</div>
                 <div>Date: ${new Date().toLocaleString()}</div>
+                <div>Paper Width: 80mm (Thermal Printer)</div>
             </div>
             <div style="font-size: 11px; border-bottom: 1px dashed #999; padding-bottom: 8px; margin-bottom: 8px;">
                 <div style="display: flex; justify-content: space-between;">
                     <span>Chicken Biryani x1</span>
                     <span>Rs. 320</span>
                 </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Mutton Karahi x1</span>
+                    <span>Rs. 550</span>
+                </div>
                 <div style="border-top: 1px dashed #999; padding-top: 5px; margin-top: 5px; display: flex; justify-content: space-between; font-weight: bold;">
                     <span>Total:</span>
-                    <span>Rs. 320</span>
+                    <span>Rs. 870</span>
                 </div>
             </div>
             <div style="text-align: center; font-size: 10px; margin-top: 10px;">
-                <div>Thank you for your order!</div>
+                <div>${this.data.store.receiptHeader}</div>
+                <div>${this.data.store.receiptFooter}</div>
+                <div style="margin-top: 5px; font-size: 9px;">✓ Test print successful</div>
             </div>
         `;
         
         const receiptContent = document.getElementById('receiptContent');
-        const originalContent = receiptContent.innerHTML;
+        if (!receiptContent) {
+            this.showToast('Receipt content element not found', 'error');
+            return;
+        }
         
+        const originalContent = receiptContent.innerHTML;
         receiptContent.innerHTML = testContent;
         
         // Wait a moment then print
         setTimeout(() => {
-            this.performPrint();
-            // Restore original content
-            setTimeout(() => {
+            try {
+                this.performPrint();
+                // Restore original content
+                setTimeout(() => {
+                    receiptContent.innerHTML = originalContent;
+                }, 500);
+            } catch (error) {
+                console.error('Error in testPrint:', error);
                 receiptContent.innerHTML = originalContent;
-            }, 500);
+                this.showToast('Error: ' + error.message, 'error');
+            }
         }, 100);
     }
     
@@ -1321,16 +1360,17 @@ class POSSystem {
     }
     
     performPrint() {
-        const autoPrint = this.data.settings.autoPrint;
-        const copies = this.data.settings.printCopies;
+        const copies = this.data.settings.printCopies || 1;
         
         // Get receipt content
         const receiptContent = document.getElementById('receiptContent');
-        const receiptHTML = receiptContent.innerHTML;
-        const storeInfo = this.data.store;
+        if (!receiptContent) {
+            this.showToast('Receipt content not found', 'error');
+            return;
+        }
         
-        // Create a print-friendly document
-        const printWindow = window.open('', '_blank');
+        const receiptHTML = receiptContent.innerHTML;
+        
         const printDocument = `
             <!DOCTYPE html>
             <html>
@@ -1367,6 +1407,10 @@ class POSSystem {
                             margin: 0 !important;
                             padding: 0 !important;
                         }
+                        body {
+                            width: 80mm !important;
+                            padding: 2mm 3mm !important;
+                        }
                     }
                     
                     body {
@@ -1387,22 +1431,22 @@ class POSSystem {
                     }
                     
                     .receipt-logo {
-                        width: 30px;
-                        height: 30px;
-                        margin: 0 auto 1mm;
+                        width: 40px;
+                        height: 40px;
+                        margin: 0 auto 1.5mm;
                         display: block;
                         border-radius: 50%;
                     }
                     
                     .receipt-store-name {
-                        font-size: 9pt;
+                        font-size: 10pt;
                         font-weight: bold;
-                        margin-bottom: 0.5mm;
+                        margin-bottom: 1mm;
                     }
                     
                     .receipt-store-info {
                         font-size: 7.5pt;
-                        margin-bottom: 0.2mm;
+                        margin-bottom: 0.3mm;
                     }
                     
                     .receipt-order-info {
@@ -1440,7 +1484,7 @@ class POSSystem {
                     
                     .receipt-total-line.final {
                         font-weight: bold;
-                        font-size: 8pt;
+                        font-size: 9pt;
                         margin-top: 0.8mm;
                         padding-top: 0.8mm;
                         border-top: 1px dashed #000;
@@ -1459,25 +1503,39 @@ class POSSystem {
             </html>
         `;
         
-        printWindow.document.write(printDocument);
-        printWindow.document.close();
-        
-        // Wait for document to load then auto-print
-        printWindow.onload = () => {
-            // Auto-trigger print immediately
+        try {
+            // Create a temporary container to hold the print content
+            const printContainer = document.createElement('div');
+            printContainer.id = 'printContainer';
+            printContainer.style.display = 'none';
+            printContainer.innerHTML = printDocument;
+            document.body.appendChild(printContainer);
+            
+            // Wait a moment for content to be ready
             setTimeout(() => {
-                for (let i = 0; i < copies; i++) {
+                try {
+                    // Open print dialog on current window
+                    window.print();
+                    
+                    this.showToast(`Receipt ready for printing (Thermal Printer - 80mm)...`, 'info');
+                    
+                    // Clean up after print dialog closes
                     setTimeout(() => {
-                        printWindow.print();
-                    }, i * 1000); // 1 second delay between copies
+                        if (printContainer && printContainer.parentNode) {
+                            printContainer.parentNode.removeChild(printContainer);
+                        }
+                    }, 500);
+                    
+                } catch (err) {
+                    console.error('Print error:', err);
+                    this.showToast('Error printing receipt.', 'error');
                 }
-                
-                // Auto-close window after printing
-                setTimeout(() => {
-                    printWindow.close();
-                }, copies * 1000 + 2000); // Close after all copies done
-            }, 100); // Small delay to ensure window is ready
-        };
+            }, 100);
+            
+        } catch (error) {
+            console.error('Error in performPrint:', error);
+            this.showToast('Error preparing receipt for print.', 'error');
+        }
     }
     
     exportAllData() {
