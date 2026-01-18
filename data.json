@@ -1,0 +1,283 @@
+{
+  "store": {
+    "name": "Naseeb Biryani and Pakwan Center",
+    "address": "Main Street, Karachi, Pakistan",
+    "phone": "+92 300 1234567",
+    "email": "info@naseebbiryani.com",
+    "taxRate": 0,
+    "logo": "resources/LOGO.jpg",
+    "receiptHeader": "Thank you for dining with us!",
+    "receiptFooter": "Follow us @naseebbiryani"
+  },
+  "categories": [
+    {
+      "id": "biryanis",
+      "name": "Biryanis",
+      "color": "#DC2626",
+      "emoji": "🍛"
+    },
+    {
+      "id": "karahi",
+      "name": "Karahi & Handi",
+      "color": "#EA580C",
+      "emoji": "🍲"
+    },
+    {
+      "id": "bbq",
+      "name": "BBQ & Grilled",
+      "color": "#D97706",
+      "emoji": "🍖"
+    },
+    {
+      "id": "breads",
+      "name": "Breads & Naan",
+      "color": "#92400E",
+      "emoji": "🍞"
+    },
+    {
+      "id": "rice",
+      "name": "Rice & Pulao",
+      "color": "#059669",
+      "emoji": "🍚"
+    },
+    {
+      "id": "drinks",
+      "name": "Beverages",
+      "color": "#2563EB",
+      "emoji": "🥤"
+    }
+  ],
+  "products": [
+    {
+      "id": "chicken_biryani",
+      "name": "Chicken Biryani",
+      "price": 320,
+      "category": "biryanis",
+      "emoji": "🍛",
+      "description": "Aromatic basmati rice with tender chicken and traditional spices"
+    },
+    {
+      "id": "beef_biryani",
+      "name": "Beef Biryani",
+      "price": 380,
+      "category": "biryanis",
+      "emoji": "🍛",
+      "description": "Rich beef biryani with slow-cooked meat and fragrant rice"
+    },
+    {
+      "id": "mutton_biryani",
+      "name": "Mutton Biryani",
+      "price": 420,
+      "category": "biryanis",
+      "emoji": "🍛",
+      "description": "Traditional mutton biryani with tender goat meat"
+    },
+    {
+      "id": "chicken_karahi",
+      "name": "Chicken Karahi",
+      "price": 450,
+      "category": "karahi",
+      "emoji": "🍲",
+      "description": "Spicy chicken karahi cooked in traditional wok with tomatoes"
+    },
+    {
+      "id": "mutton_karahi",
+      "name": "Mutton Karahi",
+      "price": 550,
+      "category": "karahi",
+      "emoji": "🍲",
+      "description": "Tender mutton pieces in rich tomato-based curry"
+    },
+    {
+      "id": "chicken_handi",
+      "name": "Chicken Handi",
+      "price": 480,
+      "category": "karahi",
+      "emoji": "🍲",
+      "description": "Creamy chicken curry cooked in clay pot"
+    },
+    {
+      "id": "chicken_tikka",
+      "name": "Chicken Tikka",
+      "price": 280,
+      "category": "bbq",
+      "emoji": "🍖",
+      "description": "Grilled chicken pieces marinated in yogurt and spices"
+    },
+    {
+      "id": "seekh_kebab",
+      "name": "Seekh Kebab",
+      "price": 250,
+      "category": "bbq",
+      "emoji": "🍖",
+      "description": "Minced meat kebabs grilled on skewers"
+    },
+    {
+      "id": "malai_boti",
+      "name": "Malai Boti",
+      "price": 320,
+      "category": "bbq",
+      "emoji": "🍖",
+      "description": "Tender chicken pieces in creamy marinade"
+    },
+    {
+      "id": "naan",
+      "name": "Tandoori Naan",
+      "price": 40,
+      "category": "breads",
+      "emoji": "🍞",
+      "description": "Fresh baked naan bread from tandoor"
+    },
+    {
+      "id": "roti",
+      "name": "Tandoori Roti",
+      "price": 30,
+      "category": "breads",
+      "emoji": "🍞",
+      "description": "Whole wheat flatbread baked in tandoor"
+    },
+    {
+      "id": "garlic_naan",
+      "name": "Garlic Naan",
+      "price": 60,
+      "category": "breads",
+      "emoji": "🍞",
+      "description": "Naan topped with fresh garlic and butter"
+    },
+    {
+      "id": "plain_rice",
+      "name": "Plain Rice",
+      "price": 80,
+      "category": "rice",
+      "emoji": "🍚",
+      "description": "Steamed basmati rice"
+    },
+    {
+      "id": "pulao",
+      "name": "Chicken Pulao",
+      "price": 200,
+      "category": "rice",
+      "emoji": "🍚",
+      "description": "Aromatic rice with chicken and mild spices"
+    },
+    {
+      "id": "pepsi",
+      "name": "Pepsi",
+      "price": 60,
+      "category": "drinks",
+      "emoji": "🥤",
+      "description": "Cold carbonated soft drink"
+    },
+    {
+      "id": "water",
+      "name": "Mineral Water",
+      "price": 40,
+      "category": "drinks",
+      "emoji": "🥤",
+      "description": "Chilled bottled water"
+    },
+    {
+      "id": "lassi",
+      "name": "Sweet Lassi",
+      "price": 80,
+      "category": "drinks",
+      "emoji": "🥤",
+      "description": "Traditional yogurt-based drink"
+    }
+  ],
+  "paymentMethods": [
+    {
+      "id": "cash",
+      "name": "Cash",
+      "emoji": "💵"
+    },
+    {
+      "id": "card",
+      "name": "Card",
+      "emoji": "💳"
+    },
+    {
+      "id": "easypaisa",
+      "name": "EasyPaisa",
+      "emoji": "📱"
+    },
+    {
+      "id": "jazzcash",
+      "name": "JazzCash",
+      "emoji": "📱"
+    }
+  ],
+  "orderTypes": [
+    {
+      "id": "dinein",
+      "name": "Dine-in",
+      "emoji": "🍽️"
+    },
+    {
+      "id": "takeaway",
+      "name": "Takeaway",
+      "emoji": "🥡"
+    },
+    {
+      "id": "delivery",
+      "name": "Delivery",
+      "emoji": "🚚"
+    }
+  ],
+  "orders": [
+    {
+      "id": "ORD-001",
+      "timestamp": "2026-01-12T13:30:00Z",
+      "items": [
+        {
+          "productId": "chicken_biryani",
+          "quantity": 2,
+          "price": 320
+        },
+        {
+          "productId": "naan",
+          "quantity": 4,
+          "price": 40
+        }
+      ],
+      "subtotal": 800,
+      "tax": 0,
+      "total": 800,
+      "paymentMethod": "cash",
+      "orderType": "dinein"
+    },
+    {
+      "id": "ORD-002",
+      "timestamp": "2026-01-12T14:15:00Z",
+      "items": [
+        {
+          "productId": "chicken_karahi",
+          "quantity": 1,
+          "price": 450
+        },
+        {
+          "productId": "roti",
+          "quantity": 5,
+          "price": 30
+        },
+        {
+          "productId": "pepsi",
+          "quantity": 2,
+          "price": 60
+        }
+      ],
+      "subtotal": 690,
+      "tax": 0,
+      "total": 690,
+      "paymentMethod": "easypaisa",
+      "orderType": "takeaway"
+    }
+  ],
+  "settings": {
+    "currency": "PKR",
+    "receiptWidth": 80,
+    "autoPrint": false,
+    "showTax": false,
+    "nextOrderNumber": 3
+  }
+}

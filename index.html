@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naseeb Biryani and Pakwan Center - POS System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/jpeg" href="resources/small icon.jpg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="store-info">
+                    <h1>Naseeb Biryani and Pakwan Center</h1>
+                </div>
+                <div class="logo-section">
+                    <img src="resources/LOGO.jpg" alt="Naseeb Biryani and Pakwan Center" class="logo">
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="pos">
+                <i class="fas fa-credit-card tab-icon"></i>
+                <span class="tab-text">POS</span>
+            </button>
+            <button class="nav-tab" data-tab="sales">
+                <i class="fas fa-chart-bar tab-icon"></i>
+                <span class="tab-text">Sales</span>
+            </button>
+            <button class="nav-tab" data-tab="menu">
+                <i class="fas fa-utensils tab-icon"></i>
+                <span class="tab-text">Menu</span>
+            </button>
+            <button class="nav-tab" data-tab="analytics">
+                <i class="fas fa-chart-line tab-icon"></i>
+                <span class="tab-text">Analytics</span>
+            </button>
+            <button class="nav-tab" data-tab="settings">
+                <i class="fas fa-cog tab-icon"></i>
+                <span class="tab-text">Settings</span>
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- POS Tab -->
+            <div class="tab-content active" id="pos-tab">
+                <div class="pos-layout">
+                    <!-- Product Selection Area -->
+                    <div class="products-section">
+                        <div class="products-header">
+                            <h2>Menu Items</h2>
+                            <div class="search-filter">
+                                <div class="search-input-wrapper">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="text" id="productSearch" placeholder="Search products..." class="search-input">
+                                </div>
+                                <select id="categoryFilter" class="filter-select">
+                                    <option value="">All Categories</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="products-grid" id="productsGrid">
+                            <!-- Products will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Cart Sidebar -->
+                    <div class="cart-sidebar" id="cartSidebar">
+                        <div class="cart-section">
+                            <div class="cart-header">
+                                <h2>Current Order</h2>
+                                <div class="cart-header-actions">
+                                    <button class="btn-text btn-danger" id="clearCartBtn">
+                                        <i class="fas fa-trash"></i> Clear All
+                                    </button>
+                                    <button id="closeSidebarBtn" class="btn-icon">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="cart-items" id="cartItems">
+                                <div class="empty-cart">
+                                    <i class="fas fa-shopping-cart empty-icon"></i>
+                                    <p>Your cart is empty</p>
+                                    <p class="empty-subtitle">Add items to get started</p>
+                                </div>
+                            </div>
+                            <div class="checkout-controls">
+                                <button class="btn-primary btn-checkout" id="checkoutBtn">
+                                    <span class="btn-text">Process Payment</span>
+                                    <span class="btn-amount" id="checkoutAmount">Rs. 0</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales Tab -->
+            <div class="tab-content" id="sales-tab">
+                <div class="sales-header">
+                    <h2>Sales History</h2>
+                    <div class="sales-controls">
+                        <select id="salesPeriodFilter" class="filter-select">
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="year">This Year</option>
+                            <option value="all">All Time</option>
+                        </select>
+                        <button class="btn-secondary" id="exportSalesBtn">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="sales-summary" id="salesSummary">
+                    <!-- Summary cards will be populated by JavaScript -->
+                </div>
+                <div class="sales-table-container">
+                    <table class="sales-table" id="salesTable">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Date & Time</th>
+                                <th>Items</th>
+                                <th>Total</th>
+                                <th>Payment</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesTableBody">
+                            <!-- Sales data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Menu Tab -->
+            <div class="tab-content" id="menu-tab">
+                <div class="menu-header">
+                    <h2>Menu Management</h2>
+                    <button class="btn-primary" id="addProductBtn">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                </div>
+                <div class="menu-grid" id="menuGrid">
+                    <!-- Menu items will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div class="tab-content" id="analytics-tab">
+                <div class="analytics-header">
+                    <h2>Analytics Dashboard</h2>
+                    <select id="analyticsPeriodFilter" class="filter-select">
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="year">This Year</option>
+                    </select>
+                </div>
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <div class="card-header">
+                            <h3>Revenue</h3>
+                            <i class="fas fa-money-bill-wave card-icon"></i>
+                        </div>
+                        <div class="card-value" id="revenueValue">Rs. 0</div>
+                        <div class="card-change" id="revenueChange">+0% from last period</div>
+                    </div>
+                    <div class="analytics-card">
+                        <div class="card-header">
+                            <h3>Orders</h3>
+                            <i class="fas fa-shopping-basket card-icon"></i>
+                        </div>
+                        <div class="card-value" id="ordersValue">0</div>
+                        <div class="card-change" id="ordersChange">+0% from last period</div>
+                    </div>
+                    <div class="analytics-card">
+                        <div class="card-header">
+                            <h3>Avg Order</h3>
+                            <i class="fas fa-chart-pie card-icon"></i>
+                        </div>
+                        <div class="card-value" id="avgOrderValue">Rs. 0</div>
+                        <div class="card-change" id="avgOrderChange">+0% from last period</div>
+                    </div>
+                    <div class="analytics-card">
+                        <div class="card-header">
+                            <h3>Returned Orders</h3>
+                            <i class="fas fa-undo card-icon"></i>
+                        </div>
+                        <div class="card-value" id="returnedOrdersValue">0</div>
+                        <div class="card-change" id="returnedAmountValue">Rs. 0</div>
+                    </div>
+                </div>
+                <div class="analytics-sections">
+                    <div class="section">
+                        <h3>Top Selling Products</h3>
+                        <div class="top-products" id="topProducts">
+                            <!-- Top products will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="section">
+                        <h3>Revenue by Items</h3>
+                        <div class="revenue-items" id="revenueByItems">
+                            <!-- Revenue by items will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="section">
+                        <h3>Revenue by Category</h3>
+                        <div class="revenue-categories" id="revenueByCategories">
+                            <!-- Revenue by categories will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-content" id="settings-tab">
+                <div class="settings-grid">
+                    <div class="settings-section">
+                        <h3>Store Information</h3>
+                        <div class="form-group">
+                            <label for="storeName">Store Name</label>
+                            <input type="text" id="storeName" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="storeAddress">Address</label>
+                            <textarea id="storeAddress" class="form-input" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="storePhone">Phone</label>
+                            <input type="tel" id="storePhone" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="storeEmail">Email</label>
+                            <input type="email" id="storeEmail" class="form-input">
+                        </div>
+                        <button class="btn-primary" id="saveStoreInfo">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Category Management</h3>
+                        <div class="form-group">
+                            <label for="categoryName">Category Name</label>
+                            <input type="text" id="categoryName" class="form-input" placeholder="Enter category name">
+                        </div>
+                        <div class="form-group">
+                            <label for="categoryColor">Category Color</label>
+                            <div class="color-picker-wrapper">
+                                <input type="color" id="categoryColor" class="form-input color-picker" value="#EF4444">
+                                <span id="colorDisplay" class="color-display"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="categoryEmoji">Category Emoji</label>
+                            <input type="text" id="categoryEmoji" class="form-input" placeholder="e.g., 🍛" maxlength="2">
+                        </div>
+                        <button class="btn-primary" id="addCategoryBtn">
+                            <i class="fas fa-plus"></i> Add Category
+                        </button>
+                        <div id="categoriesList" class="categories-list" style="margin-top: 20px;">
+                            <!-- Categories will be listed here -->
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Receipt Header & Footer</h3>
+                        <div class="form-group">
+                            <label for="receiptHeader">Receipt Header</label>
+                            <input type="text" id="receiptHeader" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="receiptFooter">Receipt Footer</label>
+                            <input type="text" id="receiptFooter" class="form-input">
+                        </div>
+                        <button class="btn-primary" id="saveReceiptSettings">
+                            <i class="fas fa-save"></i> Save Receipt Settings
+                        </button>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Printer Settings (Thermal 80mm)</h3>
+                        <p style="font-size: 0.9rem; color: var(--gray-600); margin-bottom: 15px;">
+                            <i class="fas fa-info-circle"></i> 
+                            When you click "Print Receipt", it will automatically open a print window with your receipt formatted for 80mm thermal printer. Just confirm the print and it will print immediately.
+                        </p>
+                        <div class="form-group">
+                            <label for="printCopies">Number of Copies</label>
+                            <input type="number" id="printCopies" class="form-input" value="1" min="1" max="5" step="1">
+                            <p style="font-size: 0.85rem; color: var(--gray-500); margin-top: 5px;">
+                                How many copies to print per receipt (1-5)
+                            </p>
+                        </div>
+                        <button class="btn-primary" id="savePrinterSettings">
+                            <i class="fas fa-save"></i> Save Printer Settings
+                        </button>
+                        <button class="btn-secondary" id="testPrint" style="margin-top: 10px;">
+                            <i class="fas fa-print"></i> Test Print
+                        </button>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Data Management</h3>
+                        <div class="data-actions">
+                            <button class="btn-secondary" id="exportAllData">
+                                <i class="fas fa-download"></i> Export All Data
+                            </button>
+                            <button class="btn-secondary" id="importAllData">
+                                <i class="fas fa-upload"></i> Import Data
+                            </button>
+                            <button class="btn-danger" id="clearAllData">
+                                <i class="fas fa-trash"></i> Clear All Data
+                            </button>
+                        </div>
+                        <p class="data-warning">
+                            <i class="fas fa-exclamation-triangle"></i> Warning: Clearing data cannot be undone
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Product Modal -->
+    <div class="modal" id="productModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="productModalTitle">Add Product</h3>
+                <button class="modal-close" id="closeProductModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="productForm">
+                <div class="form-group">
+                    <label for="productName">Product Name</label>
+                    <input type="text" id="productName" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="productPrice">Price (PKR)</label>
+                    <input type="number" id="productPrice" class="form-input" step="1" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="productCategory">Category</label>
+                    <select id="productCategory" class="form-input" required>
+                        <!-- Categories will be populated by JavaScript -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="productDescription">Description</label>
+                    <textarea id="productDescription" class="form-input" rows="2"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelProduct">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i> Save Product
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div class="modal" id="receiptModal">
+        <div class="modal-content receipt-modal">
+            <div class="modal-header">
+                <h3>Receipt</h3>
+                <button class="modal-close" id="closeReceiptModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="receipt-content" id="receiptContent">
+                <!-- Receipt will be generated by JavaScript -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="closeReceipt">
+                    <i class="fas fa-times"></i> Close
+                </button>
+                <button class="btn-primary" id="printReceipt">
+                    <i class="fas fa-print"></i> Print Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Data Modal -->
+    <div class="modal" id="importModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Import Data</h3>
+                <button class="modal-close" id="closeImportModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="import-content">
+                <div class="form-group">
+                    <label for="importFile">Select JSON file to import:</label>
+                    <input type="file" id="importFile" accept=".json" class="form-input">
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="cancelImport">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button class="btn-primary" id="confirmImport">
+                        <i class="fas fa-upload"></i> Import Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <i class="toast-icon" id="toastIcon"></i>
+            <span class="toast-message" id="toastMessage">Operation completed successfully</span>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
