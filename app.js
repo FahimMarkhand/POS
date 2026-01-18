@@ -653,27 +653,41 @@ class POSSystem {
         
         let receiptHTML = `
             <div class="receipt-header">
-                <img src="${baseUrl}resources/R-LOGO.png" alt="${this.data.store.name}" class="receipt-logo" style="width: 180px; height: 180px; border-radius: 50%;">
+                <img src="${baseUrl}resources/R-LOGO.png" alt="${this.data.store.name}" class="receipt-logo">
                 <div class="receipt-store-name">${this.data.store.name}</div>
                 <div class="receipt-store-info">${this.data.store.address}</div>
-                <div class="receipt-store-info">${this.data.store.phone}</div>
-                <div class="receipt-store-info">${new Date(order.timestamp).toLocaleString()}</div>
+                <div class="receipt-store-info">Mobile: ${this.data.store.phone}</div>
+                <div class="receipt-title">Sale Invoice</div>
             </div>
             
-            <div class="receipt-order-info">
-                <div><strong>Order:</strong> ${order.id}</div>
-                <div><strong>Payment:</strong> ${paymentMethod?.name}</div>
+            <div class="receipt-meta">
+                <div class="receipt-meta-row">
+                    <span>Invoice No.</span>
+                    <span>${order.id}</span>
+                </div>
+                <div class="receipt-meta-row">
+                    <span>Date</span>
+                    <span>${new Date(order.timestamp).toLocaleString()}</span>
+                </div>
             </div>
             
             <div class="receipt-items">
+                <div class="receipt-items-header">
+                    <span class="col-product">Product</span>
+                    <span class="col-qty">Qty</span>
+                    <span class="col-price">Unit Price</span>
+                    <span class="col-total">Subt</span>
+                </div>
         `;
         
         order.items.forEach(item => {
             const product = this.data.products.find(p => p.id === item.productId);
             receiptHTML += `
                 <div class="receipt-item">
-                    <span class="receipt-item-name">${product?.name || 'Unknown'} x${item.quantity}</span>
-                    <span>Rs. ${item.price * item.quantity}</span>
+                    <span class="col-product">${product?.name || 'Unknown'}</span>
+                    <span class="col-qty">${item.quantity}</span>
+                    <span class="col-price">${item.price}</span>
+                    <span class="col-total">${item.price * item.quantity}</span>
                 </div>
             `;
         });
@@ -684,14 +698,18 @@ class POSSystem {
             <div class="receipt-totals">
                 <div class="receipt-total-line">
                     <span>Subtotal:</span>
-                    <span>Rs. ${order.subtotal}</span>
+                    <span>Rs ${order.subtotal}</span>
                 </div>
         `;
         
         receiptHTML += `
                 <div class="receipt-total-line final">
                     <span>Total:</span>
-                    <span>Rs. ${order.total}</span>
+                    <span>Rs ${order.total}</span>
+                </div>
+                <div class="receipt-total-line">
+                    <span>${paymentMethod?.name} (${new Date(order.timestamp).toLocaleDateString()})</span>
+                    <span>Rs ${order.total}</span>
                 </div>
             </div>
             
@@ -1371,16 +1389,16 @@ class POSSystem {
         
         const receiptHTML = receiptContent.innerHTML;
         
-        // Get the base URL for loading images
-        const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-        
         const printDocument = `
             <!DOCTYPE html>
             <html>
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Receipt - Print</title>
+                <title>Receipt</title>
+                <link rel="preconnect" href="https://fonts.googleapis.com">
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
                 <style>
                     * {
                         margin: 0;
@@ -1414,13 +1432,17 @@ class POSSystem {
                     }
                     
                     body {
-                        font-family: 'Courier New', monospace;
-                        font-size: 8.5pt;
-                        line-height: 1.3;
+                        font-family: 'Roboto', Arial, sans-serif;
+                        font-size: 11pt;
+                        line-height: 1.35;
+                        font-weight: 500;
                         width: 80mm;
                         margin: 0;
                         padding: 2mm 3mm;
                         background: white;
+                        color: #000;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
                     }
                     
                     .receipt-header {
@@ -1431,31 +1453,47 @@ class POSSystem {
                     }
                     
                     .receipt-logo {
-                        width: 40px;
-                        height: 40px;
-                        margin: 0 auto 1.5mm;
+                        width: 100px;
+                        height: 100px;
+                        margin: 0 auto 1mm;
                         display: block;
-                        border-radius: 50%;
                     }
                     
                     .receipt-store-name {
-                        font-size: 10pt;
+                        font-size: 12pt;
                         font-weight: bold;
                         margin-bottom: 1mm;
                     }
                     
                     .receipt-store-info {
-                        font-size: 7.5pt;
+                        font-size: 10pt;
                         margin-bottom: 0.3mm;
-                        word-wrap: break-word;
-                        word-break: break-word;
+                    }
+
+                    .receipt-title {
+                        font-size: 11pt;
+                        font-weight: bold;
+                        margin-top: 0.8mm;
+                    }
+                    
+                    .receipt-meta {
+                        border-bottom: 1px dashed #000;
+                        padding-bottom: 1mm;
+                        margin-bottom: 1mm;
+                        font-size: 10pt;
+                    }
+                    
+                    .receipt-meta-row {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 0.4mm;
                     }
                     
                     .receipt-order-info {
                         margin-bottom: 1mm;
                         padding-bottom: 1mm;
                         border-bottom: 1px dashed #000;
-                        font-size: 8pt;
+                        font-size: 10pt;
                     }
                     
                     .receipt-items {
@@ -1464,17 +1502,42 @@ class POSSystem {
                         border-bottom: 1px dashed #000;
                     }
                     
+                    .receipt-items-header {
+                        display: flex;
+                        justify-content: space-between;
+                        font-weight: bold;
+                        border-bottom: 1px dashed #000;
+                        padding-bottom: 0.6mm;
+                        margin-bottom: 0.6mm;
+                        font-size: 10pt;
+                    }
+                    
                     .receipt-item {
                         display: flex;
                         justify-content: space-between;
                         margin-bottom: 0.8mm;
-                        font-size: 7.5pt;
-                        word-wrap: break-word;
+                        font-size: 10pt;
                     }
                     
-                    .receipt-item-name {
+                    .col-product {
                         flex: 1;
-                        word-break: break-word;
+                        text-align: left;
+                        padding-right: 2mm;
+                    }
+                    
+                    .col-qty {
+                        width: 10mm;
+                        text-align: center;
+                    }
+                    
+                    .col-price {
+                        width: 18mm;
+                        text-align: right;
+                    }
+                    
+                    .col-total {
+                        width: 16mm;
+                        text-align: right;
                     }
                     
                     .receipt-totals {
@@ -1487,12 +1550,12 @@ class POSSystem {
                         display: flex;
                         justify-content: space-between;
                         margin-bottom: 0.3mm;
-                        font-size: 7.5pt;
+                        font-size: 10pt;
                     }
                     
                     .receipt-total-line.final {
                         font-weight: bold;
-                        font-size: 9pt;
+                        font-size: 12pt;
                         margin-top: 0.8mm;
                         padding-top: 0.8mm;
                         border-top: 1px dashed #000;
@@ -1500,10 +1563,8 @@ class POSSystem {
                     
                     .receipt-footer {
                         text-align: center;
-                        font-size: 7pt;
+                        font-size: 8pt;
                         margin-top: 1mm;
-                        word-wrap: break-word;
-                        word-break: break-word;
                     }
                 </style>
             </head>
@@ -1514,71 +1575,55 @@ class POSSystem {
         `;
         
         try {
-            // Create a blob from the document string
-            const blob = new Blob([printDocument], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
+            const existingFrame = document.getElementById('printFrame');
+            if (existingFrame && existingFrame.parentNode) {
+                existingFrame.parentNode.removeChild(existingFrame);
+            }
             
-            // Create an iframe for printing
             const printFrame = document.createElement('iframe');
             printFrame.id = 'printFrame';
-            printFrame.style.display = 'none';
-            printFrame.src = url;
+            printFrame.style.position = 'fixed';
+            printFrame.style.right = '0';
+            printFrame.style.bottom = '0';
+            printFrame.style.width = '0';
+            printFrame.style.height = '0';
+            printFrame.style.border = '0';
+            printFrame.style.visibility = 'hidden';
+            document.body.appendChild(printFrame);
             
-            printFrame.onload = () => {
+            const frameWindow = printFrame.contentWindow;
+            const frameDocument = frameWindow?.document;
+            if (!frameWindow || !frameDocument) {
+                this.showToast('Error preparing print frame.', 'error');
+                return;
+            }
+            
+            frameDocument.open();
+            frameDocument.write(printDocument);
+            frameDocument.close();
+            
+            const triggerPrint = () => {
                 try {
-                    // Fix image paths in the iframe
-                    const images = printFrame.contentDocument.getElementsByTagName('img');
-                    if (images.length > 0) {
-                        for (let img of images) {
-                            if (!img.src.startsWith('http')) {
-                                // If it's a relative path, prepend baseUrl
-                                if (!img.src.startsWith('/')) {
-                                    img.src = baseUrl + img.src.split('/').pop();
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Small delay to ensure images are ready
-                    setTimeout(() => {
-                        try {
-                            // Print multiple copies
-                            for (let i = 0; i < copies; i++) {
-                                setTimeout(() => {
-                                    try {
-                                        printFrame.contentWindow.focus();
-                                        printFrame.contentWindow.print();
-                                        if (i === 0) {
-                                            this.showToast(`Printing receipt...`, 'info');
-                                        }
-                                    } catch (err) {
-                                        console.error('Print error on copy ' + (i + 1) + ':', err);
-                                    }
-                                }, i * 2000);
-                            }
-                            
-                            // Clean up after printing
-                            setTimeout(() => {
-                                if (document.body.contains(printFrame)) {
-                                    document.body.removeChild(printFrame);
-                                }
-                                URL.revokeObjectURL(url);
-                            }, copies * 2000 + 2000);
-                            
-                        } catch (err) {
-                            console.error('Error in print process:', err);
-                            this.showToast('Error printing receipt.', 'error');
-                        }
-                    }, 300);
-                    
+                    frameWindow.focus();
+                    frameWindow.print();
+                    this.showToast('Receipt ready for printing (Thermal Printer - 80mm)...', 'info');
                 } catch (err) {
-                    console.error('Error loading print frame:', err);
-                    this.showToast('Error preparing print document.', 'error');
+                    console.error('Print error:', err);
+                    this.showToast('Error printing receipt.', 'error');
+                } finally {
+                    setTimeout(() => {
+                        if (printFrame && printFrame.parentNode) {
+                            printFrame.parentNode.removeChild(printFrame);
+                        }
+                    }, 500);
                 }
             };
             
-            document.body.appendChild(printFrame);
-            
+            if (frameDocument.readyState === 'complete') {
+                setTimeout(triggerPrint, 100);
+            } else {
+                printFrame.onload = () => setTimeout(triggerPrint, 100);
+            }
         } catch (error) {
             console.error('Error in performPrint:', error);
             this.showToast('Error preparing receipt for print.', 'error');
