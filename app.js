@@ -1371,16 +1371,16 @@ class POSSystem {
         
         const receiptHTML = receiptContent.innerHTML;
         
+        // Get the base URL for loading images
+        const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+        
         const printDocument = `
             <!DOCTYPE html>
             <html>
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Receipt</title>
-                <link rel="preconnect" href="https://fonts.googleapis.com">
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+                <title>Receipt - Print</title>
                 <style>
                     * {
                         margin: 0;
@@ -1447,6 +1447,8 @@ class POSSystem {
                     .receipt-store-info {
                         font-size: 7.5pt;
                         margin-bottom: 0.3mm;
+                        word-wrap: break-word;
+                        word-break: break-word;
                     }
                     
                     .receipt-order-info {
@@ -1467,6 +1469,12 @@ class POSSystem {
                         justify-content: space-between;
                         margin-bottom: 0.8mm;
                         font-size: 7.5pt;
+                        word-wrap: break-word;
+                    }
+                    
+                    .receipt-item-name {
+                        flex: 1;
+                        word-break: break-word;
                     }
                     
                     .receipt-totals {
@@ -1494,6 +1502,8 @@ class POSSystem {
                         text-align: center;
                         font-size: 7pt;
                         margin-top: 1mm;
+                        word-wrap: break-word;
+                        word-break: break-word;
                     }
                 </style>
             </head>
@@ -1504,33 +1514,70 @@ class POSSystem {
         `;
         
         try {
-            // Create a temporary container to hold the print content
-            const printContainer = document.createElement('div');
-            printContainer.id = 'printContainer';
-            printContainer.style.display = 'none';
-            printContainer.innerHTML = printDocument;
-            document.body.appendChild(printContainer);
+            // Create a blob from the document string
+            const blob = new Blob([printDocument], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
             
-            // Wait a moment for content to be ready
-            setTimeout(() => {
+            // Create an iframe for printing
+            const printFrame = document.createElement('iframe');
+            printFrame.id = 'printFrame';
+            printFrame.style.display = 'none';
+            printFrame.src = url;
+            
+            printFrame.onload = () => {
                 try {
-                    // Open print dialog on current window
-                    window.print();
-                    
-                    this.showToast(`Receipt ready for printing (Thermal Printer - 80mm)...`, 'info');
-                    
-                    // Clean up after print dialog closes
-                    setTimeout(() => {
-                        if (printContainer && printContainer.parentNode) {
-                            printContainer.parentNode.removeChild(printContainer);
+                    // Fix image paths in the iframe
+                    const images = printFrame.contentDocument.getElementsByTagName('img');
+                    if (images.length > 0) {
+                        for (let img of images) {
+                            if (!img.src.startsWith('http')) {
+                                // If it's a relative path, prepend baseUrl
+                                if (!img.src.startsWith('/')) {
+                                    img.src = baseUrl + img.src.split('/').pop();
+                                }
+                            }
                         }
-                    }, 500);
+                    }
+                    
+                    // Small delay to ensure images are ready
+                    setTimeout(() => {
+                        try {
+                            // Print multiple copies
+                            for (let i = 0; i < copies; i++) {
+                                setTimeout(() => {
+                                    try {
+                                        printFrame.contentWindow.focus();
+                                        printFrame.contentWindow.print();
+                                        if (i === 0) {
+                                            this.showToast(`Printing receipt...`, 'info');
+                                        }
+                                    } catch (err) {
+                                        console.error('Print error on copy ' + (i + 1) + ':', err);
+                                    }
+                                }, i * 2000);
+                            }
+                            
+                            // Clean up after printing
+                            setTimeout(() => {
+                                if (document.body.contains(printFrame)) {
+                                    document.body.removeChild(printFrame);
+                                }
+                                URL.revokeObjectURL(url);
+                            }, copies * 2000 + 2000);
+                            
+                        } catch (err) {
+                            console.error('Error in print process:', err);
+                            this.showToast('Error printing receipt.', 'error');
+                        }
+                    }, 300);
                     
                 } catch (err) {
-                    console.error('Print error:', err);
-                    this.showToast('Error printing receipt.', 'error');
+                    console.error('Error loading print frame:', err);
+                    this.showToast('Error preparing print document.', 'error');
                 }
-            }, 100);
+            };
+            
+            document.body.appendChild(printFrame);
             
         } catch (error) {
             console.error('Error in performPrint:', error);
