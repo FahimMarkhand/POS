@@ -2,14 +2,14 @@
 // Credentials loaded from .env file for security
 
 const firebaseConfig = {
-    apiKey: process.env.FIREBASE_API_KEY || "AIzaSyCF7THBYo69IzeuCGxdBB88bt_x_wx6-r0",
-    authDomain: process.env.FIREBASE_AUTH_DOMAIN || "poss-2b64e.firebaseapp.com",
-    databaseURL: process.env.FIREBASE_DATABASE_URL || "https://poss-2b64e-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: process.env.FIREBASE_PROJECT_ID || "poss-2b64e",
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "poss-2b64e.firebasestorage.app",
-    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "938632996173",
-    appId: process.env.FIREBASE_APP_ID || "1:938632996173:web:43b6243a2449f54052c304",
-    measurementId: process.env.FIREBASE_MEASUREMENT_ID || "G-QLSYR4WZLP"
+    apiKey: process.env.FIREBASE_API_KEY ,
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN ,
+    databaseURL: process.env.FIREBASE_DATABASE_URL ,
+    projectId: process.env.FIREBASE_PROJECT_ID ,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET ,
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.FIREBASE_APP_ID ,
+    measurementId: process.env.FIREBASE_MEASUREMENT_ID g
 };
 
 // Initialize Firebase
