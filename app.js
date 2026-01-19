@@ -1427,28 +1427,30 @@ class POSSystem {
                         box-sizing: border-box;
                     }
                     
-                    html, body {
+                    html {
                         width: 76mm;
                         margin: 0;
                         padding: 0;
                     }
                     
                     @page {
-                        size: 76mm auto !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
+                        size: 80mm auto;
+                        margin: 0;
+                        padding: 0;
                     }
                     
                     @media print {
-                        html, body {
-                            width: 76mm !important;
-                            height: auto !important;
+                        html {
+                            width: 100% !important;
                             margin: 0 !important;
                             padding: 0 !important;
                         }
                         body {
                             width: 76mm !important;
-                            padding: 2mm 2mm !important;
+                            max-width: 76mm !important;
+                            height: auto !important;
+                            margin: 0 !important;
+                            padding: 3mm 3.5mm !important;
                         }
                     }
                     
@@ -1458,8 +1460,9 @@ class POSSystem {
                         line-height: 1.35;
                         font-weight: 500;
                         width: 76mm;
-                        margin: 0;
-                        padding: 2mm 2mm;
+                        max-width: 76mm;
+                        margin: 0 auto;
+                        padding: 3mm 3.5mm;
                         background: white;
                         color: #000;
                         -webkit-print-color-adjust: exact;
@@ -1543,23 +1546,24 @@ class POSSystem {
                     .col-product {
                         flex: 1;
                         text-align: left;
-                        padding-right: 2mm;
+                        padding-right: 1mm;
+                        min-width: 20mm;
                     }
                     
                     .col-qty {
-                        width: 9mm;
+                        width: 8mm;
                         text-align: center;
                         flex-shrink: 0;
                     }
                     
                     .col-price {
-                        width: 16mm;
+                        width: 15mm;
                         text-align: right;
                         flex-shrink: 0;
                     }
                     
                     .col-total {
-                        width: 14mm;
+                        width: 13mm;
                         text-align: right;
                         flex-shrink: 0;
                     }
