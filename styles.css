@@ -1898,17 +1898,12 @@ textarea.form-input {
 }
 
 .col-qty {
-    width: 52px;
+    width: 44px;
     text-align: center;
 }
 
 .col-price {
-    width: 80px;
-    text-align: right;
-}
-
-.col-total {
-    width: 70px;
+    width: 68px;
     text-align: right;
 }
 
