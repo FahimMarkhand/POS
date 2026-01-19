@@ -697,6 +697,7 @@ class POSSystem {
                     <span class="col-product">Product</span>
                     <span class="col-qty">Qty</span>
                     <span class="col-price">Unit Price</span>
+                    <span class="col-total">Subt</span>
                 </div>
         `;
         
@@ -707,6 +708,7 @@ class POSSystem {
                     <span class="col-product">${product?.name || 'Unknown'}</span>
                     <span class="col-qty">${item.quantity}</span>
                     <span class="col-price">${item.price}</span>
+                    <span class="col-total">${item.price * item.quantity}</span>
                 </div>
             `;
         });
@@ -1426,27 +1428,27 @@ class POSSystem {
                     }
                     
                     html, body {
-                        width: 80mm;
+                        width: 76mm;
                         margin: 0;
                         padding: 0;
                     }
                     
                     @page {
-                        size: 80mm auto !important;
+                        size: 76mm auto !important;
                         margin: 0 !important;
                         padding: 0 !important;
                     }
                     
                     @media print {
                         html, body {
-                            width: 80mm !important;
+                            width: 76mm !important;
                             height: auto !important;
                             margin: 0 !important;
                             padding: 0 !important;
                         }
                         body {
-                            width: 80mm !important;
-                            padding: 2mm 3mm !important;
+                            width: 76mm !important;
+                            padding: 2mm 2mm !important;
                         }
                     }
                     
@@ -1455,9 +1457,9 @@ class POSSystem {
                         font-size: 11pt;
                         line-height: 1.35;
                         font-weight: 500;
-                        width: 80mm;
+                        width: 76mm;
                         margin: 0;
-                        padding: 2mm 3mm;
+                        padding: 2mm 2mm;
                         background: white;
                         color: #000;
                         -webkit-print-color-adjust: exact;
@@ -1552,6 +1554,12 @@ class POSSystem {
                     
                     .col-price {
                         width: 16mm;
+                        text-align: right;
+                        flex-shrink: 0;
+                    }
+                    
+                    .col-total {
+                        width: 14mm;
                         text-align: right;
                         flex-shrink: 0;
                     }
