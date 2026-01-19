@@ -1828,7 +1828,7 @@ class POSSystem {
         
         const width = this.data.settings.thermalWidth || 80;
         const margin = this.data.settings.printMargin || 0;
-        const safePadding = Math.max(1, margin);
+        const safePadding = 0;
         // Reserve extra space for printer's unprintable margins
         const bodyWidth = Math.max(width - 6, 40);
         
