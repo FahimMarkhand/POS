@@ -697,7 +697,6 @@ class POSSystem {
                     <span class="col-product">Product</span>
                     <span class="col-qty">Qty</span>
                     <span class="col-price">Unit Price</span>
-                    <span class="col-total">Subt</span>
                 </div>
         `;
         
@@ -708,7 +707,6 @@ class POSSystem {
                     <span class="col-product">${product?.name || 'Unknown'}</span>
                     <span class="col-qty">${item.quantity}</span>
                     <span class="col-price">${item.price}</span>
-                    <span class="col-total">${item.price * item.quantity}</span>
                 </div>
             `;
         });
@@ -1547,18 +1545,15 @@ class POSSystem {
                     }
                     
                     .col-qty {
-                        width: 10mm;
+                        width: 9mm;
                         text-align: center;
+                        flex-shrink: 0;
                     }
                     
                     .col-price {
-                        width: 18mm;
-                        text-align: right;
-                    }
-                    
-                    .col-total {
                         width: 16mm;
                         text-align: right;
+                        flex-shrink: 0;
                     }
                     
                     .receipt-totals {
