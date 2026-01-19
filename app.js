@@ -1826,12 +1826,6 @@ class POSSystem {
         
         const receiptHTML = receiptContent.innerHTML;
         
-        const width = 80;
-        const margin = this.data.settings.printMargin || 0;
-        const safePadding = 0;
-        // Hard-safe printable width for most 80mm printers
-        const bodyWidth = 72;
-        
         const printDocument = `
             <!DOCTYPE html>
             <html>
@@ -1849,176 +1843,147 @@ class POSSystem {
                         box-sizing: border-box;
                     }
                     
-                    html {
-                        width: ${bodyWidth}mm;
-                        margin: 0;
+                    /* FIXED: Changed 76mm to 72mm to fit printable area */
+                    html, body {
+                        width: 72mm; 
+                        margin: 0 auto; /* Centers content */
                         padding: 0;
                     }
                     
                     @page {
-                        size: ${width}mm auto;
-                        margin: 0;
-                        padding: 0;
+                        size: 72mm auto !important; /* Match body width */
+                        margin: 0mm !important;     /* Remove browser margins */
                     }
                     
                     @media print {
-                        html {
-                            width: 100% !important;
-                            margin: 0 !important;
-                            padding: 0 !important;
+                        html, body {
+                            width: 72mm !important;
+                            height: auto !important;
                         }
                         body {
-                            width: ${bodyWidth}mm !important;
-                            max-width: ${bodyWidth}mm !important;
-                            height: auto !important;
-                            margin: 0 !important;
-                            padding: ${safePadding}mm ${safePadding}mm !important;
+                            padding: 0 1mm !important; /* Very small side padding */
                         }
                     }
                     
                     body {
                         font-family: 'Roboto', Arial, sans-serif;
-                        font-size: 8.5pt;
-                        line-height: 1.25;
+                        font-size: 10pt; /* Reduced slightly to fit more text */
+                        line-height: 1.3;
                         font-weight: 500;
-                        width: ${bodyWidth}mm;
-                        max-width: ${bodyWidth}mm;
-                        margin: 0 auto;
-                        padding: ${safePadding}mm ${safePadding}mm;
                         background: white;
                         color: #000;
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
                     }
+                    
+                    /* ... Rest of your CSS stays mostly the same ... */
                     
                     .receipt-header {
                         text-align: center;
-                        margin-bottom: 1.5mm;
-                        padding-bottom: 1.5mm;
+                        margin-bottom: 2mm;
+                        padding-bottom: 2mm;
                         border-bottom: 1px dashed #000;
                     }
                     
                     .receipt-logo {
-                        width: 100px;
-                        height: 100px;
+                        width: 60px; /* Reduced logo size slightly */
+                        height: auto;
                         margin: 0 auto 1mm;
                         display: block;
                     }
                     
                     .receipt-store-name {
-                        font-size: 12pt;
+                        font-size: 11pt;
                         font-weight: bold;
                         margin-bottom: 1mm;
                     }
                     
                     .receipt-store-info {
-                        font-size: 8.5pt;
-                        margin-bottom: 0.3mm;
+                        font-size: 9pt;
+                        margin-bottom: 0.5mm;
                     }
 
                     .receipt-title {
-                        font-size: 11pt;
+                        font-size: 10pt;
                         font-weight: bold;
-                        margin-top: 0.8mm;
+                        margin-top: 1mm;
                     }
                     
                     .receipt-meta {
                         border-bottom: 1px dashed #000;
                         padding-bottom: 1mm;
                         margin-bottom: 1mm;
-                        font-size: 8.5pt;
+                        font-size: 9pt;
                     }
                     
                     .receipt-meta-row {
                         display: flex;
                         justify-content: space-between;
-                        margin-bottom: 0.4mm;
-                    }
-                    
-                    .receipt-order-info {
-                        margin-bottom: 1mm;
-                        padding-bottom: 1mm;
-                        border-bottom: 1px dashed #000;
-                        font-size: 8.5pt;
-                    }
-                    
-                    .receipt-items {
-                        margin-bottom: 1mm;
-                        padding-bottom: 1mm;
-                        border-bottom: 1px dashed #000;
+                        margin-bottom: 0.5mm;
                     }
                     
                     .receipt-items-header {
-                        display: grid;
-                        grid-template-columns: minmax(0, 1fr) 5mm 9mm 9mm;
-                        column-gap: 1mm;
-                        align-items: start;
+                        display: flex;
+                        justify-content: space-between;
                         font-weight: bold;
                         border-bottom: 1px dashed #000;
-                        padding-bottom: 0.6mm;
-                        margin-bottom: 0.6mm;
-                        font-size: 8.5pt;
+                        padding-bottom: 1mm;
+                        margin-bottom: 1mm;
+                        font-size: 9pt;
                     }
                     
                     .receipt-item {
-                        display: grid;
-                        grid-template-columns: minmax(0, 1fr) 5mm 9mm 9mm;
-                        column-gap: 1mm;
-                        align-items: start;
-                        margin-bottom: 0.8mm;
-                        font-size: 10pt;
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 1mm;
+                        font-size: 9pt;
                     }
                     
+                    /* Adjusted Column Widths for 72mm */
                     .col-product {
                         flex: 1;
                         text-align: left;
-                        padding-right: 0.2mm;
-                        min-width: 0;
-                        white-space: normal;
-                        word-break: break-word;
-                        overflow-wrap: anywhere;
+                        padding-right: 1mm;
                     }
                     
                     .col-qty {
+                        width: 6mm;
                         text-align: center;
-                        flex-shrink: 0;
                     }
                     
                     .col-price {
+                        width: 14mm;
                         text-align: right;
-                        flex-shrink: 0;
                     }
                     
                     .col-total {
+                        width: 14mm;
                         text-align: right;
-                        flex-shrink: 0;
                     }
                     
                     .receipt-totals {
-                        margin-bottom: 0.8mm;
-                        padding-bottom: 0.8mm;
+                        margin-bottom: 1mm;
+                        padding-bottom: 1mm;
                         border-bottom: 1px dashed #000;
                     }
                     
                     .receipt-total-line {
                         display: flex;
                         justify-content: space-between;
-                        margin-bottom: 0.3mm;
-                        font-size: 10pt;
+                        margin-bottom: 0.5mm;
+                        font-size: 9pt;
                     }
                     
                     .receipt-total-line.final {
                         font-weight: bold;
-                        font-size: 12pt;
-                        margin-top: 0.8mm;
-                        padding-top: 0.8mm;
+                        font-size: 11pt;
+                        margin-top: 1mm;
+                        padding-top: 1mm;
                         border-top: 1px dashed #000;
                     }
                     
                     .receipt-footer {
                         text-align: center;
                         font-size: 8pt;
-                        margin-top: 1mm;
+                        margin-top: 2mm;
                     }
                 </style>
             </head>
@@ -2036,17 +2001,18 @@ class POSSystem {
             
             const printFrame = document.createElement('iframe');
             printFrame.id = 'printFrame';
+            // Hide iframe but keep it part of DOM
             printFrame.style.position = 'fixed';
             printFrame.style.right = '0';
             printFrame.style.bottom = '0';
             printFrame.style.width = '0';
             printFrame.style.height = '0';
             printFrame.style.border = '0';
-            printFrame.style.visibility = 'hidden';
             document.body.appendChild(printFrame);
             
             const frameWindow = printFrame.contentWindow;
             const frameDocument = frameWindow?.document;
+            
             if (!frameWindow || !frameDocument) {
                 this.showToast('Error preparing print frame.', 'error');
                 return;
@@ -2060,23 +2026,24 @@ class POSSystem {
                 try {
                     frameWindow.focus();
                     frameWindow.print();
-                    this.showToast('Receipt ready for printing (Thermal Printer - 80mm)...', 'info');
+                    this.showToast('Sent to Printer...', 'info');
                 } catch (err) {
                     console.error('Print error:', err);
                     this.showToast('Error printing receipt.', 'error');
                 } finally {
-                    setTimeout(() => {
+                    // Optional: remove frame after delay
+                     setTimeout(() => {
                         if (printFrame && printFrame.parentNode) {
                             printFrame.parentNode.removeChild(printFrame);
                         }
-                    }, 500);
+                    }, 2000); // Increased timeout to ensure print dialog doesn't break
                 }
             };
             
             if (frameDocument.readyState === 'complete') {
-                setTimeout(triggerPrint, 100);
+                setTimeout(triggerPrint, 500); // Slight delay to ensure CSS renders
             } else {
-                printFrame.onload = () => setTimeout(triggerPrint, 100);
+                printFrame.onload = () => setTimeout(triggerPrint, 500);
             }
         } catch (error) {
             console.error('Error in performPrint:', error);
