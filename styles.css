@@ -1907,6 +1907,11 @@ textarea.form-input {
     text-align: right;
 }
 
+.col-total {
+    width: 60px;
+    text-align: right;
+}
+
 @media print {
     .receipt-item {
         margin-bottom: 1mm !important;
