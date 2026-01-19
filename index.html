@@ -47,6 +47,11 @@
                 <i class="fas fa-cog tab-icon"></i>
                 <span class="tab-text">Settings</span>
             </button>
+            <div class="connectivity-status">
+                <div id="connectivityIndicator" class="connectivity-indicator online" title="Online - All changes syncing">
+                    <i class="fas fa-wifi"></i> Online
+                </div>
+            </div>
         </nav>
 
         <!-- Main Content -->
@@ -68,6 +73,25 @@
                                 </select>
                             </div>
                         </div>
+                        
+                        <!-- Manual KG Entry Section -->
+                        <div class="manual-kg-entry-section">
+                            <h3>Add Custom Item</h3>
+                            <div class="manual-kg-form">
+                                <select id="manualKgCategory" class="form-input">
+                                    <option value="">Select Category</option>
+                                </select>
+                                <input type="number" 
+                                       id="manualKgPrice" 
+                                       placeholder="Enter Price (Rs.)" 
+                                       class="form-input"
+                                       min="1"
+                                       step="1">
+                                <span class="quantity-preview" id="quantityPreview">Qty: 0</span>
+                                <button class="btn-add-custom" onclick="posSystem.addCustomKgItem()">Add</button>
+                            </div>
+                        </div>
+                        
                         <div class="products-grid" id="productsGrid">
                             <!-- Products will be populated by JavaScript -->
                         </div>
@@ -313,7 +337,11 @@
                     </div>
 
                     <div class="settings-section">
-                        <h3>Data Management</h3>
+                        <h3>Data Management & Offline Mode</h3>
+                        <p style="font-size: 0.9rem; color: var(--gray-600); margin-bottom: 15px;">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>Offline Support:</strong> Your system works completely offline. All changes are saved locally and automatically sync to Firebase when you're back online. Check the connection status in the header.
+                        </p>
                         <div class="data-actions">
                             <button class="btn-secondary" id="exportAllData">
                                 <i class="fas fa-download"></i> Export All Data
@@ -321,9 +349,20 @@
                             <button class="btn-secondary" id="importAllData">
                                 <i class="fas fa-upload"></i> Import Data
                             </button>
-                            <button class="btn-danger" id="clearAllData">
-                                <i class="fas fa-trash"></i> Clear All Data
+                            <button class="btn-success" id="syncToFirebase">
+                                <i class="fas fa-cloud-upload-alt"></i> Sync to Firebase
                             </button>
+                            <button class="btn-secondary" id="checkSyncStatus">
+                                <i class="fas fa-check-circle"></i> Check Sync Status
+                            </button>
+                            <button class="btn-danger" id="resetToDefault" style="background: #DC2626; border-color: #DC2626;">
+                                <i class="fas fa-redo"></i> Reset to Default
+                            </button>
+                        </div>
+                        <div id="syncStatusInfo" style="margin-top: 15px; padding: 10px; border-radius: 5px; background: var(--gray-100); display: none;">
+                            <p style="margin: 0; font-size: 0.9rem;">
+                                <i class="fas fa-sync"></i> <span id="syncStatusText">Pending changes: 0</span>
+                            </p>
                         </div>
                         <p class="data-warning">
                             <i class="fas fa-exclamation-triangle"></i> Warning: Clearing data cannot be undone
@@ -349,19 +388,45 @@
                     <input type="text" id="productName" class="form-input" required>
                 </div>
                 <div class="form-group">
-                    <label for="productPrice">Price (PKR)</label>
-                    <input type="number" id="productPrice" class="form-input" step="1" min="0" required>
-                </div>
-                <div class="form-group">
                     <label for="productCategory">Category</label>
-                    <select id="productCategory" class="form-input" required>
+                    <select id="productCategory" class="form-input" required onchange="posSystem.updateCategoryRateDisplay()">
                         <!-- Categories will be populated by JavaScript -->
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="productDescription">Description</label>
-                    <textarea id="productDescription" class="form-input" rows="2"></textarea>
+                <div class="form-group" id="categoryRateInfo" style="padding: 10px; background: var(--gray-100); border-radius: 5px; display: none;">
+                    <div style="font-size: 0.9rem; color: var(--gray-700);">
+                        <div>Category Unit: <strong id="categoryUnitDisplay">--</strong></div>
+                        <div>Category Rate: <strong id="categoryRateDisplay">--</strong></div>
+                    </div>
                 </div>
+
+                <!-- For weight items (kg, gram, ml, liter) -->
+                <div class="form-group" id="quantitySelectGroup" style="display: none;">
+                    <label for="productQuantity">Select Quantity</label>
+                    <select id="productQuantity" class="form-input" required onchange="posSystem.updatePriceDisplay()">
+                        <option value="">-- Select Quantity --</option>
+                        <option value="0.5">half kg</option>
+                        <option value="1">1 kg</option>
+                        <option value="1.5">dedh kilo</option>
+                        <option value="2">2 kg</option>
+                        <option value="2.5">dhai kilo</option>
+                        <option value="3">3 kg</option>
+                        <option value="3.5">saṛhay teen kilo</option>
+                        <option value="4">4 kg</option>
+                    </select>
+                    <div id="pricePreview" style="margin-top: 10px; padding: 10px; background: var(--primary-light); border-radius: 5px; text-align: center; display: none;">
+                        <div style="font-size: 0.9rem; color: var(--gray-700);">Estimated Price:</div>
+                        <div id="estimatedPrice" style="font-size: 1.3rem; font-weight: bold; color: var(--primary);">Rs. 0</div>
+                    </div>
+                </div>
+
+                <!-- For pcs items -->
+                <div class="form-group" id="priceFieldGroup" style="display: none;">
+                    <label for="productPrice">Price</label>
+                    <input type="number" id="productPrice" class="form-input" step="1" min="1" placeholder="e.g., 40, 80, 150">
+                    <small style="color: var(--gray-600);">Price for this individual item</small>
+                </div>
+
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" id="cancelProduct">
                         <i class="fas fa-times"></i> Cancel
@@ -374,12 +439,67 @@
         </div>
     </div>
 
+    <!-- Category Edit Modal -->
+    <div class="modal" id="categoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Category</h3>
+                <button type="button" class="modal-close" id="closeCategoryModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="categoryForm">
+                <div class="form-group">
+                    <label for="editCategoryName">Category Name</label>
+                    <input type="text" id="editCategoryName" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="editCategoryColor">Category Color</label>
+                    <div class="color-picker-wrapper">
+                        <input type="color" id="editCategoryColor" class="form-input color-picker" value="#EF4444">
+                        <span id="editColorDisplay" class="color-display"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editCategoryEmoji">Category Emoji</label>
+                    <input type="text" id="editCategoryEmoji" class="form-input" placeholder="e.g., 🍛" maxlength="2">
+                </div>
+                <div class="form-group">
+                    <label for="editCategoryUnit">Unit</label>
+                    <select id="editCategoryUnit" class="form-input" required>
+                        <option value="pcs">Pieces (pcs)</option>
+                        <option value="kg">Kilogram (kg)</option>
+                        <option value="gram">Gram (g)</option>
+                        <option value="ml">Milliliter (ml)</option>
+                        <option value="liter">Liter (L)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editCategoryBasePrice">Price Rate (for all items in this category)</label>
+                    <div style="display: flex; gap: 10px; align-items: flex-end;">
+                        <input type="number" id="editCategoryBasePrice" class="form-input" step="1" min="0" value="0" style="flex: 1;">
+                        <span id="categoryUnitDisplay2" style="min-width: 50px; text-align: center; font-weight: bold; color: var(--primary);">Rs/unit</span>
+                    </div>
+                    <small style="color: var(--gray-600);">Set to 0 for items with individual prices (like pcs items)</small>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelCategory">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i> Save Category
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Receipt Modal -->
     <div class="modal" id="receiptModal">
         <div class="modal-content receipt-modal">
             <div class="modal-header">
                 <h3>Receipt</h3>
-                <button class="modal-close" id="closeReceiptModal">
+                <button type="button" class="modal-close" id="closeReceiptModal" onclick="window.posSystem && window.posSystem.closeReceiptModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -387,13 +507,56 @@
                 <!-- Receipt will be generated by JavaScript -->
             </div>
             <div class="modal-actions">
-                <button class="btn-secondary" id="closeReceipt">
+                <button type="button" class="btn-secondary" id="closeReceipt" onclick="window.posSystem && window.posSystem.closeReceiptModal()">
                     <i class="fas fa-times"></i> Close
                 </button>
-                <button class="btn-primary" id="printReceipt">
+                <button type="button" class="btn-primary" id="printReceipt" onclick="window.posSystem && window.posSystem.printReceipt()">
                     <i class="fas fa-print"></i> Print Receipt
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Price Adjustment Modal -->
+    <div class="modal" id="priceAdjustModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>Adjust Price</h3>
+                <button class="modal-close" id="closePriceAdjust">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="priceAdjustForm">
+                <div class="form-group">
+                    <label for="adjustItemName">Item Name</label>
+                    <input type="text" id="adjustItemName" class="form-input" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="adjustBasePrice">Base Price (PKR)</label>
+                    <input type="number" id="adjustBasePrice" class="form-input" step="1" min="0" readonly>
+                    <small style="color: var(--gray-600);">Price per unit (read-only)</small>
+                </div>
+                <div class="form-group">
+                    <label for="adjustQuantity">Quantity</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="number" id="adjustQuantity" class="form-input" step="0.5" min="0.5" style="flex: 1;">
+                        <span id="adjustUnitDisplay" style="min-width: 50px; text-align: center;"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="adjustTotalPrice">Total Price (PKR)</label>
+                    <input type="number" id="adjustTotalPrice" class="form-input" step="1" min="0">
+                    <small style="color: var(--gray-600);">Or enter desired price to auto-calculate quantity</small>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelPriceAdjust">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-check"></i> Save Changes
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -432,5 +595,21 @@
     </div>
 
     <script src="app.js"></script>
+    <script>
+        // Register Service Worker for offline support
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then((registration) => {
+                    console.log('✓ Service Worker registered successfully');
+                })
+                .catch((error) => {
+                    console.warn('Service Worker registration failed:', error);
+                });
+        }
+        
+        // Debug: Check offline status anytime
+        // Open browser console and type: posSystem.offline.debugInfo()
+        // This will show you the current connectivity and sync queue status
+    </script>
 </body>
 </html>

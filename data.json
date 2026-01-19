@@ -14,135 +14,123 @@
       "id": "biryanis",
       "name": "Biryanis",
       "color": "#DC2626",
-      "emoji": "🍛"
+      "emoji": "🍛",
+      "unit": "kg",
+      "basePrice": 320
     },
     {
       "id": "karahi",
       "name": "Karahi & Handi",
       "color": "#EA580C",
-      "emoji": "🍲"
+      "emoji": "🍲",
+      "unit": "kg",
+      "basePrice": 450
     },
     {
       "id": "bbq",
       "name": "BBQ & Grilled",
       "color": "#D97706",
-      "emoji": "🍖"
+      "emoji": "🍖",
+      "unit": "kg",
+      "basePrice": 380
     },
     {
       "id": "breads",
       "name": "Breads & Naan",
       "color": "#92400E",
-      "emoji": "🍞"
+      "emoji": "🍞",
+      "unit": "pcs",
+      "basePrice": 0
     },
     {
       "id": "rice",
       "name": "Rice & Pulao",
       "color": "#059669",
-      "emoji": "🍚"
+      "emoji": "🍚",
+      "unit": "kg",
+      "basePrice": 280
     },
     {
       "id": "drinks",
       "name": "Beverages",
       "color": "#2563EB",
-      "emoji": "🥤"
+      "emoji": "🥤",
+      "unit": "pcs",
+      "basePrice": 0
     }
   ],
   "products": [
     {
       "id": "chicken_biryani",
       "name": "Chicken Biryani",
-      "price": 320,
       "category": "biryanis",
-      "emoji": "🍛",
-      "description": "Aromatic basmati rice with tender chicken and traditional spices"
+      "quantity": 1
     },
     {
       "id": "beef_biryani",
       "name": "Beef Biryani",
-      "price": 380,
       "category": "biryanis",
-      "emoji": "🍛",
-      "description": "Rich beef biryani with slow-cooked meat and fragrant rice"
+      "quantity": 1
     },
     {
       "id": "mutton_biryani",
       "name": "Mutton Biryani",
-      "price": 420,
       "category": "biryanis",
-      "emoji": "🍛",
-      "description": "Traditional mutton biryani with tender goat meat"
+      "quantity": 1
     },
     {
       "id": "chicken_karahi",
       "name": "Chicken Karahi",
-      "price": 450,
       "category": "karahi",
-      "emoji": "🍲",
-      "description": "Spicy chicken karahi cooked in traditional wok with tomatoes"
+      "quantity": 1
     },
     {
       "id": "mutton_karahi",
       "name": "Mutton Karahi",
-      "price": 550,
       "category": "karahi",
-      "emoji": "🍲",
-      "description": "Tender mutton pieces in rich tomato-based curry"
+      "quantity": 1
     },
     {
       "id": "chicken_handi",
       "name": "Chicken Handi",
-      "price": 480,
       "category": "karahi",
-      "emoji": "🍲",
-      "description": "Creamy chicken curry cooked in clay pot"
+      "quantity": 1
     },
     {
       "id": "chicken_tikka",
       "name": "Chicken Tikka",
-      "price": 280,
       "category": "bbq",
-      "emoji": "🍖",
-      "description": "Grilled chicken pieces marinated in yogurt and spices"
+      "quantity": 1
     },
     {
       "id": "seekh_kebab",
       "name": "Seekh Kebab",
-      "price": 250,
       "category": "bbq",
-      "emoji": "🍖",
-      "description": "Minced meat kebabs grilled on skewers"
+      "quantity": 1
     },
     {
       "id": "malai_boti",
       "name": "Malai Boti",
-      "price": 320,
       "category": "bbq",
-      "emoji": "🍖",
-      "description": "Tender chicken pieces in creamy marinade"
+      "quantity": 1
     },
     {
       "id": "naan",
       "name": "Tandoori Naan",
-      "price": 40,
       "category": "breads",
-      "emoji": "🍞",
-      "description": "Fresh baked naan bread from tandoor"
+      "price": 40
     },
     {
       "id": "roti",
       "name": "Tandoori Roti",
-      "price": 30,
       "category": "breads",
-      "emoji": "🍞",
-      "description": "Whole wheat flatbread baked in tandoor"
+      "price": 30
     },
     {
       "id": "garlic_naan",
       "name": "Garlic Naan",
-      "price": 60,
       "category": "breads",
-      "emoji": "🍞",
-      "description": "Naan topped with fresh garlic and butter"
+      "price": 60
     },
     {
       "id": "plain_rice",
@@ -155,34 +143,26 @@
     {
       "id": "pulao",
       "name": "Chicken Pulao",
-      "price": 200,
       "category": "rice",
-      "emoji": "🍚",
-      "description": "Aromatic rice with chicken and mild spices"
+      "quantity": 1
     },
     {
       "id": "pepsi",
       "name": "Pepsi",
-      "price": 60,
       "category": "drinks",
-      "emoji": "🥤",
-      "description": "Cold carbonated soft drink"
+      "price": 60
     },
     {
       "id": "water",
       "name": "Mineral Water",
-      "price": 40,
       "category": "drinks",
-      "emoji": "🥤",
-      "description": "Chilled bottled water"
+      "price": 40
     },
     {
       "id": "lassi",
       "name": "Sweet Lassi",
-      "price": 80,
       "category": "drinks",
-      "emoji": "🥤",
-      "description": "Traditional yogurt-based drink"
+      "price": 80
     }
   ],
   "paymentMethods": [

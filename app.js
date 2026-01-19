@@ -25,6 +25,8 @@ class POSSystem {
         this.initializeUI();
         this.bindEvents();
         this.updatePrintStyles();
+        // Wait longer for DOM to be fully ready - styles loaded, layout calculated
+        await new Promise(resolve => setTimeout(resolve, 300));
         this.renderPOS();
         this.updateSalesSummary();
         this.filterSales();
@@ -34,16 +36,32 @@ class POSSystem {
     
     async loadData() {
         try {
-            // Try to load from Firebase REST API first
+            // Try to load from Firebase REST API first with timeout
             try {
-                const response = await fetch('https://poss-2b64e-default-rtdb.asia-southeast1.firebasedatabase.app/posData.json');
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+                
+                const response = await fetch('https://poss-2b64e-default-rtdb.asia-southeast1.firebasedatabase.app/posData.json', {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                
                 if (response.ok) {
                     this.data = await response.json();
                     console.log('✓ Data loaded from Firebase');
+                    // Validate that we have categories
+                    if (!this.data.categories || this.data.categories.length === 0) {
+                        console.warn('Firebase data missing categories, using defaults');
+                        this.data.categories = this.getDefaultData().categories;
+                    }
+                    if (!this.data.products || this.data.products.length === 0) {
+                        console.warn('Firebase data missing products, using defaults');
+                        this.data.products = this.getDefaultData().products;
+                    }
                     return;
                 }
             } catch (error) {
-                console.warn('Could not load from Firebase, trying localStorage...', error);
+                console.warn('Could not load from Firebase, trying localStorage...', error.message);
             }
             
             // Try to load from localStorage
@@ -51,6 +69,15 @@ class POSSystem {
             if (savedData) {
                 this.data = JSON.parse(savedData);
                 console.log('✓ Data loaded from localStorage');
+                // Validate that we have categories and products
+                if (!this.data.categories || this.data.categories.length === 0) {
+                    console.warn('localStorage data missing categories, using defaults');
+                    this.data.categories = this.getDefaultData().categories;
+                }
+                if (!this.data.products || this.data.products.length === 0) {
+                    console.warn('localStorage data missing products, using defaults');
+                    this.data.products = this.getDefaultData().products;
+                }
             } else {
                 // Load initial data from data.json directly
                 const response = await fetch('data.json');
@@ -191,6 +218,18 @@ class POSSystem {
             productCategory.appendChild(option);
         });
         
+        // Initialize manual kg category dropdown for custom items
+        const manualKgCategory = document.getElementById('manualKgCategory');
+        if (manualKgCategory) {
+            manualKgCategory.innerHTML = '<option value="">Select Category</option>';
+            this.data.categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                manualKgCategory.appendChild(option);
+            });
+        }
+        
         // Initialize settings
         this.loadSettings();
     }
@@ -214,76 +253,120 @@ class POSSystem {
     }
     
     bindEvents() {
-        // Tab navigation
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                const tabName = e.currentTarget.dataset.tab;
-                this.switchTab(tabName);
+        try {
+            console.log('bindEvents() starting');
+            // Tab navigation
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    const tabName = e.currentTarget.dataset.tab;
+                    this.switchTab(tabName);
+                });
             });
-        });
-        
-        // Cart sidebar close button
-        const closeBtn = document.getElementById('closeSidebarBtn');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => this.closeCartSidebar());
-        }
-        
-        // Close sidebar on Escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.closeCartSidebar();
+            console.log('Tab navigation bound');
+            
+            // Cart sidebar close button
+            const closeBtn = document.getElementById('closeSidebarBtn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => this.closeCartSidebar());
             }
-        });
-        
-        // Product search and filter
-        document.getElementById('productSearch').addEventListener('input', () => this.filterProducts());
-        document.getElementById('categoryFilter').addEventListener('change', () => this.filterProducts());
-        
-        // Cart actions
-        document.getElementById('clearCartBtn').addEventListener('click', () => this.clearCart());
-        document.getElementById('checkoutBtn').addEventListener('click', () => this.checkout());
-        
-        // Menu management
-        document.getElementById('addProductBtn').addEventListener('click', () => this.openProductModal());
-        document.getElementById('closeProductModal').addEventListener('click', () => this.closeProductModal());
-        document.getElementById('cancelProduct').addEventListener('click', () => this.closeProductModal());
-        document.getElementById('productForm').addEventListener('submit', (e) => this.saveProduct(e));
-        
-        // Sales actions
-        document.getElementById('exportSalesBtn').addEventListener('click', () => this.exportSalesCSV());
-        document.getElementById('salesPeriodFilter').addEventListener('change', () => this.filterSales());
-        
-        // Analytics
-        document.getElementById('analyticsPeriodFilter').addEventListener('change', () => this.updateAnalytics());
-        
-        // Settings
-        document.getElementById('saveStoreInfo').addEventListener('click', () => this.saveStoreInfo());
-        document.getElementById('saveReceiptSettings').addEventListener('click', () => this.saveReceiptSettings());
-        document.getElementById('savePrinterSettings').addEventListener('click', () => this.savePrinterSettings());
-        document.getElementById('testPrint').addEventListener('click', () => this.testPrint());
-        
-        // Category management
-        document.getElementById('addCategoryBtn').addEventListener('click', () => this.addCategory());
-        document.getElementById('categoryColor').addEventListener('input', (e) => this.updateColorDisplay(e.target.value));
-        
-        // Data management
-        document.getElementById('exportAllData').addEventListener('click', () => this.exportAllData());
-        document.getElementById('importAllData').addEventListener('click', () => this.openImportModal());
-        document.getElementById('clearAllData').addEventListener('click', () => this.clearAllData());
-        
-        // Import modal
-        document.getElementById('closeImportModal').addEventListener('click', () => this.closeImportModal());
-        document.getElementById('cancelImport').addEventListener('click', () => this.closeImportModal());
-        document.getElementById('confirmImport').addEventListener('click', () => this.importData());
-        
-        // Receipt modal
-        document.getElementById('closeReceiptModal').addEventListener('click', () => this.closeReceiptModal());
-        document.getElementById('closeReceipt').addEventListener('click', () => this.closeReceiptModal());
-        document.getElementById('printReceipt').addEventListener('click', () => this.printReceipt());
+            
+            // Close sidebar on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    this.closeCartSidebar();
+                }
+            });
+            
+            // Product search and filter
+            document.getElementById('productSearch').addEventListener('input', () => this.filterProducts());
+            document.getElementById('categoryFilter').addEventListener('change', () => this.filterProducts());
+            
+            // Cart actions
+            document.getElementById('clearCartBtn').addEventListener('click', () => this.clearCart());
+            document.getElementById('checkoutBtn').addEventListener('click', () => this.checkout());
+            
+            // Menu management
+            document.getElementById('addProductBtn').addEventListener('click', () => this.openProductModal());
+            document.getElementById('closeProductModal').addEventListener('click', () => this.closeProductModal());
+            document.getElementById('cancelProduct').addEventListener('click', () => this.closeProductModal());
+            document.getElementById('productForm').addEventListener('submit', (e) => this.saveProduct(e));
+            document.getElementById('productCategory').addEventListener('change', () => this.updateCategoryRateDisplay());
+            document.getElementById('productQuantity').addEventListener('change', () => this.updatePriceDisplay());
+            
+            // Sales actions
+            document.getElementById('exportSalesBtn').addEventListener('click', () => this.exportSalesCSV());
+            document.getElementById('salesPeriodFilter').addEventListener('change', () => this.filterSales());
+            
+            // Analytics
+            document.getElementById('analyticsPeriodFilter').addEventListener('change', () => this.updateAnalytics());
+            
+            // Settings
+            document.getElementById('saveStoreInfo').addEventListener('click', () => this.saveStoreInfo());
+            document.getElementById('saveReceiptSettings').addEventListener('click', () => this.saveReceiptSettings());
+            document.getElementById('savePrinterSettings').addEventListener('click', () => this.savePrinterSettings());
+            document.getElementById('testPrint').addEventListener('click', () => this.testPrint());
+            
+            // Category management
+            document.getElementById('addCategoryBtn').addEventListener('click', () => this.addCategory());
+            document.getElementById('categoryColor').addEventListener('input', (e) => this.updateColorDisplay(e.target.value));
+            
+            // Category modal
+            document.getElementById('closeCategoryModal').addEventListener('click', () => this.closeCategoryModal());
+            document.getElementById('cancelCategory').addEventListener('click', () => this.closeCategoryModal());
+            document.getElementById('categoryForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.saveCategoryChanges();
+            });
+            document.getElementById('editCategoryColor').addEventListener('input', (e) => {
+                document.getElementById('editColorDisplay').style.backgroundColor = e.target.value;
+            });
+            document.getElementById('editCategoryUnit').addEventListener('change', (e) => {
+                const unitLabel = {
+                    'pcs': 'Rs/pcs',
+                    'kg': 'Rs/kg',
+                    'gram': 'Rs/g',
+                    'ml': 'Rs/ml',
+                    'liter': 'Rs/L'
+                };
+                document.getElementById('categoryUnitDisplay2').textContent = unitLabel[e.target.value] || 'Rs/unit';
+            });
+            
+            // Data management
+            document.getElementById('exportAllData').addEventListener('click', () => this.exportAllData());
+            document.getElementById('importAllData').addEventListener('click', () => this.openImportModal());
+            document.getElementById('clearAllData').addEventListener('click', () => this.clearAllData());
+            
+            // Import modal
+            document.getElementById('closeImportModal').addEventListener('click', () => this.closeImportModal());
+            document.getElementById('cancelImport').addEventListener('click', () => this.closeImportModal());
+            document.getElementById('confirmImport').addEventListener('click', () => this.importData());
+            
+            console.log('bindEvents() completed successfully');
+        } catch (error) {
+            console.error('Error in bindEvents():', error, error.stack);
+        }
     }
     
     updateColorDisplay(color) {
         document.getElementById('colorDisplay').style.backgroundColor = color;
+    }
+
+    hexToRgba(hex, alpha) {
+        if (!hex) {
+            return `rgba(0, 0, 0, ${alpha})`;
+        }
+        let value = hex.replace('#', '').trim();
+        if (value.length === 3) {
+            value = value.split('').map(ch => ch + ch).join('');
+        }
+        if (value.length !== 6 || /[^0-9a-f]/i.test(value)) {
+            return `rgba(0, 0, 0, ${alpha})`;
+        }
+        const intValue = parseInt(value, 16);
+        const r = (intValue >> 16) & 255;
+        const g = (intValue >> 8) & 255;
+        const b = intValue & 255;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
     
     addCategory() {
@@ -323,26 +406,79 @@ class POSSystem {
     }
     
     editCategory(categoryId) {
+        this.openCategoryModal(categoryId);
+    }
+    
+    openCategoryModal(categoryId) {
         const category = this.data.categories.find(c => c.id === categoryId);
         if (!category) return;
         
-        const newName = prompt('Enter new category name:', category.name);
-        if (!newName || newName.trim() === '') return;
+        // Populate modal with category data
+        document.getElementById('editCategoryName').value = category.name;
+        document.getElementById('editCategoryColor').value = category.color;
+        document.getElementById('editCategoryEmoji').value = category.emoji;
+        document.getElementById('editCategoryUnit').value = category.unit || 'pcs';
+        document.getElementById('editCategoryBasePrice').value = category.basePrice || 0;
+        document.getElementById('editColorDisplay').style.backgroundColor = category.color;
         
-        const newColor = prompt('Enter new color (hex):', category.color);
-        if (!newColor) return;
+        // Update unit display
+        const unitSelect = document.getElementById('editCategoryUnit');
+        const unitLabel = {
+            'pcs': 'Rs/pcs',
+            'kg': 'Rs/kg',
+            'gram': 'Rs/g',
+            'ml': 'Rs/ml',
+            'liter': 'Rs/L'
+        };
+        document.getElementById('categoryUnitDisplay2').textContent = unitLabel[category.unit] || 'Rs/unit';
         
-        const newEmoji = prompt('Enter new emoji:', category.emoji);
-        if (newEmoji === null) return;
+        // Store the category ID for saving
+        const modal = document.getElementById('categoryModal');
+        modal.setAttribute('data-category-id', categoryId);
+        
+        // Show modal
+        modal.classList.add('active');
+    }
+    
+    closeCategoryModal() {
+        const modal = document.getElementById('categoryModal');
+        modal.classList.remove('active');
+        modal.removeAttribute('data-category-id');
+    }
+    
+    saveCategoryChanges() {
+        const modal = document.getElementById('categoryModal');
+        const categoryId = modal.getAttribute('data-category-id');
+        const category = this.data.categories.find(c => c.id === categoryId);
+        
+        if (!category) {
+            this.showToast('Category not found', 'error');
+            return;
+        }
+        
+        const newName = document.getElementById('editCategoryName').value.trim();
+        const newColor = document.getElementById('editCategoryColor').value;
+        const newEmoji = document.getElementById('editCategoryEmoji').value.trim();
+        const newUnit = document.getElementById('editCategoryUnit').value;
+        const newBasePrice = parseInt(document.getElementById('editCategoryBasePrice').value) || 0;
+        
+        if (!newName) {
+            this.showToast('Category name cannot be empty', 'error');
+            return;
+        }
         
         category.name = newName;
         category.color = newColor;
         category.emoji = newEmoji || '📦';
+        category.unit = newUnit;
+        category.basePrice = newBasePrice;
         
         this.saveData();
-        this.showToast('Category updated successfully', 'success');
+        this.closeCategoryModal();
         this.renderCategoriesList();
+        this.initializeUI();
         this.renderProducts();
+        this.showToast('Category updated successfully', 'success');
     }
     
     deleteCategory(categoryId) {
@@ -383,7 +519,7 @@ class POSSystem {
                     </div>
                 </div>
                 <div class="category-actions">
-                    <button class="btn-sm btn-edit" onclick="posSystem.editCategory('${category.id}')">
+                    <button class="btn-sm btn-edit" onclick="if(window.posSystem) posSystem.openCategoryModal('${category.id}')">
                         <i class="fas fa-edit"></i> Edit
                     </button>
                     <button class="btn-sm btn-delete" onclick="posSystem.deleteCategory('${category.id}')">
@@ -437,7 +573,15 @@ class POSSystem {
     
     renderProducts() {
         const productsGrid = document.getElementById('productsGrid');
+        if (!productsGrid) return;
+        
         productsGrid.innerHTML = '';
+        
+        // Guard against missing data
+        if (!this.data.categories || !this.data.products) {
+            console.warn('Missing categories or products data');
+            return;
+        }
         
         // Group products by category
         const groupedProducts = {};
@@ -458,18 +602,6 @@ class POSSystem {
             categorySection.className = 'pos-category-section';
             categorySection.setAttribute('data-category', categoryId);
             
-            // Category header - REMOVED
-            // const categoryHeader = document.createElement('div');
-            // categoryHeader.className = 'pos-category-header';
-            // categoryHeader.style.backgroundColor = categoryData.color + '20';
-            // categoryHeader.style.borderLeftColor = categoryData.color;
-            // categoryHeader.innerHTML = `
-            //     <h3 style="color: ${categoryData.color}; margin: 0;">
-            //         ${categoryData.name}
-            //     </h3>
-            // `;
-            // categorySection.appendChild(categoryHeader);
-            
             // Category items container
             const itemsContainer = document.createElement('div');
             itemsContainer.className = 'pos-category-items';
@@ -479,11 +611,41 @@ class POSSystem {
                 const productCard = document.createElement('div');
                 productCard.className = 'product-card';
                 productCard.setAttribute('data-category', product.category);
+                const quantity = product.quantity || 1;
+                
+                // Get price from category basePrice or product price override
+                const category = this.data.categories.find(c => c.id === product.category);
+                const price = product.price || category?.basePrice || 0;
+                const unit = category?.unit || 'pcs';
+                const categoryColor = category?.color || '#D1D5DB';
+
+                productCard.style.borderColor = categoryColor;
+                productCard.style.background = `linear-gradient(135deg, ${this.hexToRgba(categoryColor, 0.2)} 0%, ${this.hexToRgba(categoryColor, 0.05)} 100%)`;
+                
+                // Use user-friendly display for kg quantities
+                let qtyDisplay = quantity;
+                if (unit === 'kg') {
+                    qtyDisplay = this.formatQuantityDisplay(quantity);
+                } else {
+                    const unitLabel = {
+                        'gram': 'g',
+                        'ml': 'ml',
+                        'liter': 'L',
+                        'pcs': 'pcs'
+                    }[unit] || unit;
+                    qtyDisplay = `${quantity} ${unitLabel}`;
+                }
+                
                 productCard.innerHTML = `
                     <h4 class="product-card-name">${product.name}</h4>
-                    <div class="product-card-price">Rs. ${product.price}</div>
-                    <div class="product-card-description">${product.description}</div>
+                    <div class="product-card-quantity">${qtyDisplay}</div>
+                    <div class="product-card-price">Rs. ${price}</div>
                 `;
+                
+                // Ensure product has price for cart operations
+                if (!product.price) {
+                    product.price = price;
+                }
                 
                 productCard.addEventListener('click', () => this.addToCart(product));
                 itemsContainer.appendChild(productCard);
@@ -536,6 +698,46 @@ class POSSystem {
         this.showToast(`Added ${product.name} to cart`, 'success');
     }
     
+    addCustomKgItem() {
+        const categorySelect = document.getElementById('manualKgCategory');
+        const priceInput = document.getElementById('manualKgPrice');
+        
+        if (!categorySelect.value) {
+            this.showToast('Please select a category', 'error');
+            return;
+        }
+        
+        if (!priceInput.value || priceInput.value <= 0) {
+            this.showToast('Please enter a valid price', 'error');
+            return;
+        }
+        
+        // Get category name
+        const category = this.data.categories.find(c => c.id === categorySelect.value);
+        const categoryName = category ? category.name : categorySelect.value;
+        
+        // Create a custom item
+        const customItem = {
+            productId: `custom_${Date.now()}`,
+            name: categoryName,
+            price: parseInt(priceInput.value),
+            quantity: 1,
+            category: categorySelect.value
+        };
+        
+        this.cart.push(customItem);
+        
+        // Reset form
+        categorySelect.value = '';
+        priceInput.value = '';
+        
+        // Open the sidebar when adding item
+        this.openCartSidebar();
+        this.renderCart();
+        this.updateCartSummary();
+        this.showToast(`Added custom item to cart`, 'success');
+    }
+    
     openCartSidebar() {
         const sidebar = document.getElementById('cartSidebar');
         const posLayout = document.querySelector('.pos-layout');
@@ -577,10 +779,12 @@ class POSSystem {
             const cartItem = document.createElement('div');
             cartItem.className = 'cart-item';
             cartItem.setAttribute('data-category', item.category);
+            const totalPrice = item.price * item.quantity;
             cartItem.innerHTML = `
                 <div class="cart-item-info">
                     <div class="cart-item-name">${item.name}</div>
                     <div class="cart-item-price">Rs. ${item.price} each</div>
+                    <div class="cart-item-total">Total: Rs. ${totalPrice}</div>
                 </div>
                 <div class="quantity-controls">
                     <button class="quantity-btn" onclick="posSystem.updateQuantity(${index}, -1)">−</button>
@@ -647,8 +851,10 @@ class POSSystem {
             timestamp: new Date().toISOString(),
             items: this.cart.map(item => ({
                 productId: item.productId,
+                name: item.name,
                 quantity: item.quantity,
-                price: item.price
+                price: item.price,
+                category: item.category
             })),
             subtotal: subtotal,
             tax: 0,
@@ -663,9 +869,39 @@ class POSSystem {
         this.showReceipt(order);
     }
     
+    formatQuantityDisplay(quantity) {
+        // Convert decimal quantities to user-friendly names
+        const qty = parseFloat(quantity);
+        const quantityNames = {
+            0.5: 'half kg',
+            1.5: 'dedh kilo',
+            2.5: 'dhai kilo',
+            3.5: 'saṛhay teen kilo'
+        };
+        
+        if (quantityNames[qty]) {
+            return quantityNames[qty];
+        }
+        
+        // For other quantities, return as is
+        return `${quantity} kg`;
+    }
+    
     showReceipt(order) {
+        console.log('showReceipt() called for order:', order.id);
         const modal = document.getElementById('receiptModal');
         const receiptContent = document.getElementById('receiptContent');
+        
+        if (!modal) {
+            console.error('receiptModal element not found in DOM');
+            return;
+        }
+        if (!receiptContent) {
+            console.error('receiptContent element not found in DOM');
+            return;
+        }
+        
+        console.log('Modal elements found, generating receipt HTML');
         
         const paymentMethod = this.data.paymentMethods.find(pm => pm.id === order.paymentMethod);
         
@@ -703,9 +939,60 @@ class POSSystem {
         
         order.items.forEach(item => {
             const product = this.data.products.find(p => p.id === item.productId);
+            let category = product ? this.data.categories.find(c => c.id === product.category) : null;
+            
+            // For custom items, also find category from item.category
+            if (!category && item.category) {
+                category = this.data.categories.find(c => c.id === item.category);
+            }
+            
+            // Format item name with unit/quantity
+            let displayName = item.name || product?.name || 'Unknown';
+            
+            // For custom items, calculate kg/unit from price and category basePrice
+            if (item.productId?.startsWith('custom_')) {
+                if (category && category.basePrice > 0) {
+                    const calculatedQty = parseFloat((item.price / category.basePrice).toFixed(2));
+                    const unit = category?.unit || 'kg';
+                    let qtyDisplay = calculatedQty;
+                    
+                    // Use user-friendly display for kg quantities
+                    if (unit === 'kg') {
+                        qtyDisplay = this.formatQuantityDisplay(calculatedQty);
+                    } else {
+                        const unitLabel = {
+                            'gram': 'g',
+                            'ml': 'ml',
+                            'liter': 'L',
+                            'pcs': 'pcs'
+                        }[unit] || unit;
+                        qtyDisplay = `${calculatedQty} ${unitLabel}`;
+                    }
+                    displayName = `${displayName} ${qtyDisplay}`;
+                }
+            } else if (product && product.quantity) {
+                // For regular products with quantity, show the quantity with unit
+                const unit = category?.unit || 'pcs';
+                let qtyDisplay = product.quantity;
+                
+                // Use user-friendly display for kg quantities
+                if (unit === 'kg') {
+                    qtyDisplay = this.formatQuantityDisplay(product.quantity);
+                } else {
+                    const unitLabel = {
+                        'gram': 'g',
+                        'ml': 'ml',
+                        'liter': 'L',
+                        'pcs': 'pcs'
+                    }[unit] || unit;
+                    qtyDisplay = `${product.quantity} ${unitLabel}`;
+                }
+                displayName = `${product.name} ${qtyDisplay}`;
+            }
+            
             receiptHTML += `
                 <div class="receipt-item">
-                    <span class="col-product">${product?.name || 'Unknown'}</span>
+                    <span class="col-product">${displayName}</span>
                     <span class="col-qty">${item.quantity}</span>
                     <span class="col-price">${item.price}</span>
                     <span class="col-total">${item.price * item.quantity}</span>
@@ -741,21 +1028,34 @@ class POSSystem {
         `;
         
         receiptContent.innerHTML = receiptHTML;
+        console.log('Receipt HTML generated, adding active class to modal');
         modal.classList.add('active');
+        console.log('Modal active class added, modal should now be visible');
     }
     
     closeReceiptModal() {
+        console.log('closeReceiptModal() called');
         // If user cancels without printing, don't save the order
         this.tempOrder = null;
-        document.getElementById('receiptModal').classList.remove('active');
+        const modal = document.getElementById('receiptModal');
+        if (modal) {
+            console.log('Removing active class from receiptModal');
+            modal.classList.remove('active');
+        } else {
+            console.error('receiptModal element not found');
+        }
     }
     
     printReceipt() {
+        console.log('printReceipt() called');
         // Validate receipt is ready
         if (!this.tempOrder) {
+            console.warn('No tempOrder available');
             this.showToast('No order to print. Please create an order first.', 'error');
             return;
         }
+        
+        console.log('Proceeding with print for order:', this.tempOrder.id);
         
         // Save the order to database when print is confirmed
         try {
@@ -770,10 +1070,12 @@ class POSSystem {
             this.showToast(`Order ${this.tempOrder.id} being sent to printer...`, 'info');
             
             // Use the thermal printer settings
+            console.log('Calling performPrint()');
             this.performPrint();
             
             // Close modal after printing
             setTimeout(() => {
+                console.log('Closing modal after print');
                 this.closeReceiptModal();
                 this.filterSales();
                 this.updateAnalytics();
@@ -1036,20 +1338,43 @@ class POSSystem {
                 const menuItem = document.createElement('div');
                 menuItem.className = 'menu-item-card';
                 menuItem.setAttribute('data-category', product.category);
+                
+                // Get category for unit information
+                const category = this.data.categories.find(c => c.id === product.category);
+                const quantity = product.quantity || 1;
+                const categoryColor = category?.color || '#D1D5DB';
+
+                menuItem.style.borderColor = categoryColor;
+                menuItem.style.background = `linear-gradient(135deg, ${this.hexToRgba(categoryColor, 0.15)} 0%, ${this.hexToRgba(categoryColor, 0.05)} 100%)`;
+                
+                // Use user-friendly display for kg quantities
+                let qtyDisplay = quantity;
+                if (category?.unit === 'kg') {
+                    qtyDisplay = this.formatQuantityDisplay(quantity);
+                } else {
+                    const unitLabel = {
+                        'gram': 'g',
+                        'ml': 'ml',
+                        'liter': 'L',
+                        'pcs': 'pcs'
+                    }[category?.unit] || category?.unit || 'pcs';
+                    qtyDisplay = `${quantity} ${unitLabel}`;
+                }
+                
                 menuItem.innerHTML = `
                     <div class="menu-item-header">
                         <div class="menu-item-info">
                             <h4>${product.name}</h4>
-                            <div class="menu-item-description">${product.description}</div>
+                            <div class="menu-item-description">${qtyDisplay}</div>
                         </div>
                         <div class="menu-item-price">Rs. ${product.price}</div>
                     </div>
                     <div class="menu-item-footer">
                         <div class="menu-item-actions">
-                            <button class="btn-secondary btn-small" onclick="posSystem.editProduct('${product.id}')">
+                            <button class="btn-secondary btn-small" onclick="if(window.posSystem) posSystem.editProduct('${product.id}')">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
-                            <button class="btn-danger btn-small" onclick="posSystem.deleteProduct('${product.id}')">
+                            <button class="btn-danger btn-small" onclick="if(window.posSystem) posSystem.deleteProduct('${product.id}')">
                                 <i class="fas fa-trash"></i> Delete
                             </button>
                         </div>
@@ -1074,12 +1399,81 @@ class POSSystem {
             document.getElementById('productName').value = this.editingProduct.name;
             document.getElementById('productPrice').value = this.editingProduct.price;
             document.getElementById('productCategory').value = this.editingProduct.category;
-            document.getElementById('productDescription').value = this.editingProduct.description;
+            document.getElementById('productQuantity').value = '';
         } else {
             document.getElementById('productForm').reset();
         }
         
+        // Update category display
+        this.updateCategoryRateDisplay();
+        
         modal.classList.add('active');
+    }
+    
+    updateCategoryRateDisplay() {
+        const categoryId = document.getElementById('productCategory').value;
+        if (!categoryId) {
+            document.getElementById('categoryRateInfo').style.display = 'none';
+            document.getElementById('quantitySelectGroup').style.display = 'none';
+            document.getElementById('priceFieldGroup').style.display = 'none';
+            return;
+        }
+        
+        const category = this.data.categories.find(c => c.id === categoryId);
+        if (!category) return;
+        
+        const unitLabel = {
+            'pcs': 'Pieces (pcs)',
+            'kg': 'Kilogram (kg)',
+            'gram': 'Gram (g)',
+            'ml': 'Milliliter (ml)',
+            'liter': 'Liter (L)'
+        };
+        
+        document.getElementById('categoryUnitDisplay').textContent = unitLabel[category.unit] || category.unit;
+        document.getElementById('categoryRateDisplay').textContent = `Rs. ${category.basePrice}/${category.unit}`;
+        document.getElementById('categoryRateInfo').style.display = 'block';
+        
+        // Show quantity selector for weight-based items (kg, gram, ml, liter)
+        if (['kg', 'gram', 'ml', 'liter'].includes(category.unit)) {
+            document.getElementById('quantitySelectGroup').style.display = 'block';
+            document.getElementById('priceFieldGroup').style.display = 'none';
+            const quantitySelect = document.getElementById('productQuantity');
+            const priceInput = document.getElementById('productPrice');
+            quantitySelect.required = true;
+            quantitySelect.disabled = false;
+            priceInput.required = false;
+            quantitySelect.value = '';
+            document.getElementById('pricePreview').style.display = 'none';
+        } else {
+            // For pcs, show price field
+            document.getElementById('quantitySelectGroup').style.display = 'none';
+            document.getElementById('priceFieldGroup').style.display = 'block';
+            const quantitySelect = document.getElementById('productQuantity');
+            const priceInput = document.getElementById('productPrice');
+            quantitySelect.required = false;
+            quantitySelect.disabled = true;
+            priceInput.required = true;
+        }
+    }
+    
+    updatePriceDisplay() {
+        const categoryId = document.getElementById('productCategory').value;
+        const quantity = document.getElementById('productQuantity').value;
+        
+        if (!categoryId || !quantity) {
+            document.getElementById('pricePreview').style.display = 'none';
+            return;
+        }
+        
+        const category = this.data.categories.find(c => c.id === categoryId);
+        if (!category) return;
+        
+        const basePrice = category.basePrice || 0;
+        const calculatedPrice = Math.round(basePrice * parseFloat(quantity));
+        
+        document.getElementById('estimatedPrice').textContent = `Rs. ${calculatedPrice}`;
+        document.getElementById('pricePreview').style.display = 'block';
     }
     
     closeProductModal() {
@@ -1104,12 +1498,34 @@ class POSSystem {
     saveProduct(e) {
         e.preventDefault();
         
+        const categoryId = document.getElementById('productCategory').value;
+        const category = this.data.categories.find(c => c.id === categoryId);
+        const quantity = document.getElementById('productQuantity').value;
+        
+        // Calculate price based on category unit and quantity
+        let price = 0;
+        if (['kg', 'gram', 'ml', 'liter'].includes(category?.unit)) {
+            // For weight-based items, use quantity * basePrice
+            if (!quantity) {
+                this.showToast('Please select a quantity', 'error');
+                return;
+            }
+            price = Math.round((category.basePrice || 0) * parseFloat(quantity));
+        } else {
+            // For pcs items, use manual price
+            price = parseInt(document.getElementById('productPrice').value) || 0;
+            if (price <= 0) {
+                this.showToast('Please enter a valid price', 'error');
+                return;
+            }
+        }
+        
         const productData = {
             name: document.getElementById('productName').value,
-            price: parseInt(document.getElementById('productPrice').value) || 0,
-            category: document.getElementById('productCategory').value,
-            description: document.getElementById('productDescription').value,
-            emoji: '' // No emoji icons in cards
+            price: price,
+            category: categoryId,
+            emoji: '', // No emoji icons in cards
+            quantity: quantity ? parseFloat(quantity) : undefined // Store quantity for weight items
         };
         
         if (this.editingProduct) {
