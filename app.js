@@ -1829,7 +1829,8 @@ class POSSystem {
         const width = this.data.settings.thermalWidth || 80;
         const margin = this.data.settings.printMargin || 0;
         const safePadding = Math.max(1, margin);
-        const bodyWidth = Math.max(width - (safePadding * 2), width);
+        // Reserve extra space for printer's unprintable margins
+        const bodyWidth = Math.max(width - 6, 40);
         
         const printDocument = `
             <!DOCTYPE html>
@@ -1877,8 +1878,8 @@ class POSSystem {
                     
                     body {
                         font-family: 'Roboto', Arial, sans-serif;
-                        font-size: 11pt;
-                        line-height: 1.35;
+                        font-size: 8.5pt;
+                        line-height: 1.25;
                         font-weight: 500;
                         width: ${bodyWidth}mm;
                         max-width: ${bodyWidth}mm;
@@ -1911,7 +1912,7 @@ class POSSystem {
                     }
                     
                     .receipt-store-info {
-                        font-size: 10pt;
+                        font-size: 8.5pt;
                         margin-bottom: 0.3mm;
                     }
 
@@ -1925,7 +1926,7 @@ class POSSystem {
                         border-bottom: 1px dashed #000;
                         padding-bottom: 1mm;
                         margin-bottom: 1mm;
-                        font-size: 10pt;
+                        font-size: 8.5pt;
                     }
                     
                     .receipt-meta-row {
@@ -1938,7 +1939,7 @@ class POSSystem {
                         margin-bottom: 1mm;
                         padding-bottom: 1mm;
                         border-bottom: 1px dashed #000;
-                        font-size: 10pt;
+                        font-size: 8.5pt;
                     }
                     
                     .receipt-items {
@@ -1954,7 +1955,7 @@ class POSSystem {
                         border-bottom: 1px dashed #000;
                         padding-bottom: 0.6mm;
                         margin-bottom: 0.6mm;
-                        font-size: 10pt;
+                        font-size: 8.5pt;
                     }
                     
                     .receipt-item {
@@ -1967,24 +1968,24 @@ class POSSystem {
                     .col-product {
                         flex: 1;
                         text-align: left;
-                        padding-right: 0.5mm;
-                        min-width: 18mm;
+                        padding-right: 0.3mm;
+                        min-width: 14mm;
                     }
                     
                     .col-qty {
-                        width: 7mm;
+                        width: 5mm;
                         text-align: center;
                         flex-shrink: 0;
                     }
                     
                     .col-price {
-                        width: 12mm;
+                        width: 9mm;
                         text-align: right;
                         flex-shrink: 0;
                     }
                     
                     .col-total {
-                        width: 12mm;
+                        width: 9mm;
                         text-align: right;
                         flex-shrink: 0;
                     }
