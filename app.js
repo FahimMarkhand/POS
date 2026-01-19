@@ -1826,11 +1826,11 @@ class POSSystem {
         
         const receiptHTML = receiptContent.innerHTML;
         
-        const width = this.data.settings.thermalWidth || 80;
+        const width = 80;
         const margin = this.data.settings.printMargin || 0;
         const safePadding = 0;
-        // Reserve extra space for printer's unprintable margins
-        const bodyWidth = Math.max(width - 6, 40);
+        // Hard-safe printable width for most 80mm printers
+        const bodyWidth = 72;
         
         const printDocument = `
             <!DOCTYPE html>
@@ -1949,8 +1949,10 @@ class POSSystem {
                     }
                     
                     .receipt-items-header {
-                        display: flex;
-                        justify-content: space-between;
+                        display: grid;
+                        grid-template-columns: minmax(0, 1fr) 5mm 9mm 9mm;
+                        column-gap: 1mm;
+                        align-items: start;
                         font-weight: bold;
                         border-bottom: 1px dashed #000;
                         padding-bottom: 0.6mm;
@@ -1959,8 +1961,10 @@ class POSSystem {
                     }
                     
                     .receipt-item {
-                        display: flex;
-                        justify-content: space-between;
+                        display: grid;
+                        grid-template-columns: minmax(0, 1fr) 5mm 9mm 9mm;
+                        column-gap: 1mm;
+                        align-items: start;
                         margin-bottom: 0.8mm;
                         font-size: 10pt;
                     }
@@ -1968,24 +1972,24 @@ class POSSystem {
                     .col-product {
                         flex: 1;
                         text-align: left;
-                        padding-right: 0.3mm;
-                        min-width: 14mm;
+                        padding-right: 0.2mm;
+                        min-width: 0;
+                        white-space: normal;
+                        word-break: break-word;
+                        overflow-wrap: anywhere;
                     }
                     
                     .col-qty {
-                        width: 5mm;
                         text-align: center;
                         flex-shrink: 0;
                     }
                     
                     .col-price {
-                        width: 9mm;
                         text-align: right;
                         flex-shrink: 0;
                     }
                     
                     .col-total {
-                        width: 9mm;
                         text-align: right;
                         flex-shrink: 0;
                     }
