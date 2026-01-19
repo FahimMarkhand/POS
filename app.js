@@ -1826,6 +1826,11 @@ class POSSystem {
         
         const receiptHTML = receiptContent.innerHTML;
         
+        const width = this.data.settings.thermalWidth || 80;
+        const margin = this.data.settings.printMargin || 0;
+        const safePadding = Math.max(1, margin);
+        const bodyWidth = Math.max(width - (safePadding * 2), width);
+        
         const printDocument = `
             <!DOCTYPE html>
             <html>
@@ -1844,13 +1849,13 @@ class POSSystem {
                     }
                     
                     html {
-                        width: 76mm;
+                        width: ${bodyWidth}mm;
                         margin: 0;
                         padding: 0;
                     }
                     
                     @page {
-                        size: 80mm auto;
+                        size: ${width}mm auto;
                         margin: 0;
                         padding: 0;
                     }
@@ -1862,11 +1867,11 @@ class POSSystem {
                             padding: 0 !important;
                         }
                         body {
-                            width: 76mm !important;
-                            max-width: 76mm !important;
+                            width: ${bodyWidth}mm !important;
+                            max-width: ${bodyWidth}mm !important;
                             height: auto !important;
                             margin: 0 !important;
-                            padding: 3mm 3.5mm !important;
+                            padding: ${safePadding}mm ${safePadding}mm !important;
                         }
                     }
                     
@@ -1875,10 +1880,10 @@ class POSSystem {
                         font-size: 11pt;
                         line-height: 1.35;
                         font-weight: 500;
-                        width: 76mm;
-                        max-width: 76mm;
+                        width: ${bodyWidth}mm;
+                        max-width: ${bodyWidth}mm;
                         margin: 0 auto;
-                        padding: 3mm 3.5mm;
+                        padding: ${safePadding}mm ${safePadding}mm;
                         background: white;
                         color: #000;
                         -webkit-print-color-adjust: exact;
@@ -1962,24 +1967,24 @@ class POSSystem {
                     .col-product {
                         flex: 1;
                         text-align: left;
-                        padding-right: 1mm;
-                        min-width: 20mm;
+                        padding-right: 0.5mm;
+                        min-width: 18mm;
                     }
                     
                     .col-qty {
-                        width: 8mm;
+                        width: 7mm;
                         text-align: center;
                         flex-shrink: 0;
                     }
                     
                     .col-price {
-                        width: 15mm;
+                        width: 12mm;
                         text-align: right;
                         flex-shrink: 0;
                     }
                     
                     .col-total {
-                        width: 13mm;
+                        width: 12mm;
                         text-align: right;
                         flex-shrink: 0;
                     }
