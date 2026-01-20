@@ -124,16 +124,21 @@
             <div class="tab-content" id="sales-tab">
                 <div class="sales-header">
                     <h2>Sales History</h2>
-                    <div class="sales-controls">
-                        <select id="salesPeriodFilter" class="filter-select">
-                            <option value="today">Today</option>
-                            <option value="week">This Week</option>
-                            <option value="month">This Month</option>
-                            <option value="year">This Year</option>
-                            <option value="all">All Time</option>
-                        </select>
+                    <div class="sales-controls-modern">
+                        <div class="month-navigation">
+                            <button id="prevMonthBtn" class="month-nav-btn" title="Previous Month">◀ Previous</button>
+                            <input type="month" id="activeMonthFilter" class="active-month-display" title="Select Month">
+                            <button id="nextMonthBtn" class="month-nav-btn" title="Next Month">Next ▶</button>
+                        </div>
+                        
+                        <div class="date-filter-section">
+                            <label for="dateWithinMonthFilter">Within Month:</label>
+                            <input type="date" id="dateWithinMonthFilter" class="filter-select" placeholder="Select Date">
+                            <button id="clearDateFilter" class="btn-secondary">Clear</button>
+                        </div>
+                        
                         <button class="btn-secondary" id="exportSalesBtn">
-                            <i class="fas fa-download"></i> Export CSV
+                            <i class="fas fa-download"></i> Export
                         </button>
                     </div>
                 </div>

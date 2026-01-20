@@ -289,9 +289,9 @@ body {
 /* Main Content */
 .main-content {
     flex: 1;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: var(--spacing-6);
+    max-width: 100%;
+    margin: 0;
+    padding: var(--spacing-4);
     width: 100%;
     margin-top: var(--nav-height);
 }
@@ -514,9 +514,10 @@ button.btn-secondary.btn-danger {
 .pos-layout {
     display: flex;
     gap: 0;
-    min-height: calc(100vh - var(--header-height) - var(--nav-height) - 120px);
+    min-height: calc(100vh - var(--header-height) - var(--nav-height) - 80px);
     position: relative;
     z-index: 1;
+    width: 100%;
 }
 
 /* Products Section - NO SCROLLING */
@@ -528,8 +529,10 @@ button.btn-secondary.btn-danger {
     flex-direction: column;
     overflow: hidden;
     flex: 1;
-    margin: var(--spacing-6);
+    margin: 0;
+    padding: var(--spacing-4);
     animation: slideUp 0.5s var(--transition-timing);
+    transition: margin-right 0.3s var(--transition-timing);
 }
 
 @keyframes slideUp {
@@ -876,10 +879,10 @@ button.btn-secondary.btn-danger {
 }
 
 .product-card-name {
-    font-weight: 600;
+    font-weight: 700;
     margin: 0;
     color: var(--gray-700);
-    font-size: var(--font-size-sm);
+    font-size: calc(var(--font-size-sm) + 1px);
     text-align: center;
     line-height: 1.2;
     overflow: hidden;
@@ -923,7 +926,7 @@ button.btn-secondary.btn-danger {
     position: fixed;
     top: calc(var(--header-height) + var(--nav-height));
     right: 0;
-    width: 380px;
+    width: 520px;
     height: calc(100vh - var(--header-height) - var(--nav-height));
     background: var(--white);
     box-shadow: var(--shadow-xl);
@@ -955,7 +958,7 @@ button.btn-secondary.btn-danger {
 
 /* When sidebar is open, adjust products section */
 .pos-layout.sidebar-open .products-section {
-    margin-right: 380px;
+    margin-right: 520px;
 }
 
 .cart-close-btn {
@@ -1434,6 +1437,105 @@ button.btn-secondary.btn-danger {
     display: flex;
     gap: var(--spacing-3);
     align-items: center;
+}
+
+.sales-controls-modern {
+    display: flex;
+    gap: var(--spacing-4);
+    align-items: center;
+    flex-wrap: wrap;
+    padding: var(--spacing-3);
+    background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.month-navigation {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    background: white;
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.month-nav-btn {
+    padding: 8px 14px;
+    background: var(--primary-red);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.3s ease;
+}
+
+.month-nav-btn:hover {
+    background: var(--dark-red);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.active-month-display {
+    padding: 8px 12px;
+    font-size: 16px;
+    font-weight: 600;
+    border: 2px solid var(--primary-red);
+    border-radius: 4px;
+    text-align: center;
+    cursor: pointer;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.active-month-display:hover {
+    border-color: var(--dark-red);
+    background: rgba(196, 30, 58, 0.05);
+}
+
+.active-month-display:focus {
+    outline: none;
+    border-color: var(--dark-red);
+    box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.1);
+}
+
+.date-filter-section {
+    display: flex;
+    gap: var(--spacing-2);
+    align-items: center;
+    padding: var(--spacing-2) var(--spacing-3);
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.date-filter-section label {
+    font-weight: 600;
+    font-size: 13px;
+    white-space: nowrap;
+    color: var(--gray-700);
+}
+
+.date-filter-section input[type="date"] {
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.date-filter-section input[type="date"]:focus {
+    outline: none;
+    border-color: var(--primary-red);
+    box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.1);
+}
+
+#clearDateFilter {
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .sales-summary {

@@ -17,7 +17,24 @@ class POSSystem {
         this.editingProduct = null;
         this.tempOrder = null;
         
+        // Month-based system
+        this.activeMonth = this.getCurrentMonth(); // Format: YYYY-MM
+        this.selectedDateWithinMonth = null; // For filtering within active month
+        
         this.init();
+    }
+    
+    getCurrentMonth() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        return `${year}-${month}`;
+    }
+    
+    formatMonthDisplay(monthStr) {
+        const [year, month] = monthStr.split('-');
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${monthNames[parseInt(month) - 1]} ${year}`;
     }
     
     async init() {
@@ -229,18 +246,55 @@ class POSSystem {
     
     async saveToFirebase() {
         try {
-            const response = await fetch('https://poss-2b64e-default-rtdb.asia-southeast1.firebasedatabase.app/posData.json', {
+            // Save main data (categories, products, settings, etc)
+            const mainDataResponse = await fetch('https://poss-2b64e-default-rtdb.asia-southeast1.firebasedatabase.app/posData.json', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(this.data)
+                body: JSON.stringify({
+                    store: this.data.store,
+                    categories: this.data.categories,
+                    products: this.data.products,
+                    paymentMethods: this.data.paymentMethods,
+                    orderTypes: this.data.orderTypes,
+                    settings: this.data.settings
+                })
             });
-            if (response.ok) {
-                console.log('✓ Data saved to Firebase successfully');
-            } else {
-                console.warn('Firebase save returned status:', response.status);
+            
+            if (!mainDataResponse.ok) {
+                console.warn('Firebase main data save returned status:', mainDataResponse.status);
             }
+            
+            // Save orders organized by month
+            const ordersGroupedByMonth = {};
+            this.data.orders.forEach(order => {
+                const orderDate = new Date(order.timestamp);
+                const monthKey = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, '0')}`;
+                if (!ordersGroupedByMonth[monthKey]) {
+                    ordersGroupedByMonth[monthKey] = [];
+                }
+                ordersGroupedByMonth[monthKey].push(order);
+            });
+            
+            // Save each month's orders separately
+            for (const [month, orders] of Object.entries(ordersGroupedByMonth)) {
+                const monthOrderResponse = await fetch(`https://poss-2b64e-default-rtdb.asia-southeast1.firebasedatabase.app/salesByMonth/${month}/orders.json`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(orders)
+                });
+                
+                if (monthOrderResponse.ok) {
+                    console.log(`✓ Saved ${orders.length} orders for ${month}`);
+                } else {
+                    console.warn(`Firebase save for month ${month} returned status:`, monthOrderResponse.status);
+                }
+            }
+            
+            console.log('✓ All data saved to Firebase successfully (organized by month)');
         } catch (error) {
             console.warn('Could not save to Firebase (continuing with localStorage):', error);
         }
@@ -291,6 +345,149 @@ class POSSystem {
         
         // Initialize color display
         document.getElementById('colorDisplay').style.backgroundColor = document.getElementById('categoryColor').value;
+        
+        // Initialize month-based sales view
+        this.initializeMonthView();
+    }
+    
+    initializeMonthView() {
+        // Set the active month input to current month
+        const activeMonthInput = document.getElementById('activeMonthFilter');
+        if (activeMonthInput) {
+            activeMonthInput.value = this.activeMonth;
+            activeMonthInput.title = this.formatMonthDisplay(this.activeMonth);
+        }
+        
+        // Set min and max for date filter within month
+        const dateFilter = document.getElementById('dateWithinMonthFilter');
+        if (dateFilter) {
+            const [year, month] = this.activeMonth.split('-');
+            const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
+            dateFilter.min = `${year}-${month}-01`;
+            dateFilter.max = `${year}-${month}-${String(daysInMonth).padStart(2, '0')}`;
+        }
+    }
+    
+    changeToPreviousMonth() {
+        const [year, month] = this.activeMonth.split('-');
+        let prevMonth = parseInt(month) - 1;
+        let prevYear = parseInt(year);
+        
+        if (prevMonth < 1) {
+            prevMonth = 12;
+            prevYear--;
+        }
+        
+        this.activeMonth = `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
+        this.selectedDateWithinMonth = null;
+        this.updateMonthView();
+    }
+    
+    changeToNextMonth() {
+        const [year, month] = this.activeMonth.split('-');
+        let nextMonth = parseInt(month) + 1;
+        let nextYear = parseInt(year);
+        
+        if (nextMonth > 12) {
+            nextMonth = 1;
+            nextYear++;
+        }
+        
+        this.activeMonth = `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
+        this.selectedDateWithinMonth = null;
+        this.updateMonthView();
+    }
+    
+    changeToMonth(monthStr) {
+        this.activeMonth = monthStr;
+        this.selectedDateWithinMonth = null;
+        this.updateMonthView();
+    }
+    
+    updateMonthView() {
+        // Update month display
+        const activeMonthInput = document.getElementById('activeMonthFilter');
+        if (activeMonthInput) {
+            activeMonthInput.value = this.activeMonth;
+            activeMonthInput.title = this.formatMonthDisplay(this.activeMonth);
+        }
+        
+        // Clear date filter
+        const dateFilter = document.getElementById('dateWithinMonthFilter');
+        if (dateFilter) {
+            dateFilter.value = '';
+            const [year, month] = this.activeMonth.split('-');
+            const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
+            dateFilter.min = `${year}-${month}-01`;
+            dateFilter.max = `${year}-${month}-${String(daysInMonth).padStart(2, '0')}`;
+        }
+        
+        // Load data for this month and refresh sales
+        this.loadSalesForMonth();
+    }
+    
+    async loadSalesForMonth() {
+        console.log(`📅 Loading sales for month: ${this.formatMonthDisplay(this.activeMonth)}`);
+        
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
+            // Try to load from Firebase first
+            const response = await fetch(`https://poss-2b64e-default-rtdb.asia-southeast1.firebasedatabase.app/salesByMonth/${this.activeMonth}/orders.json`, {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+                const monthOrders = await response.json();
+                if (monthOrders) {
+                    this.data.orders = Array.isArray(monthOrders) ? monthOrders : Object.values(monthOrders);
+                    console.log(`✓ Loaded ${this.data.orders.length} orders for ${this.formatMonthDisplay(this.activeMonth)}`);
+                } else {
+                    this.data.orders = [];
+                    console.log(`No sales history for ${this.formatMonthDisplay(this.activeMonth)}`);
+                }
+            } else {
+                this.data.orders = [];
+            }
+        } catch (error) {
+            console.warn(`Could not load sales for month ${this.activeMonth}:`, error.message);
+            this.data.orders = [];
+        }
+        
+        // Refresh sales display
+        this.filterSalesWithinMonth();
+        this.updateSalesSummary();
+    }
+    
+    filterSalesWithinMonth() {
+        const dateFilter = document.getElementById('dateWithinMonthFilter');
+        this.selectedDateWithinMonth = dateFilter ? dateFilter.value : null;
+        
+        let filteredOrders = this.data.orders;
+        
+        if (this.selectedDateWithinMonth) {
+            const filterDate = new Date(this.selectedDateWithinMonth);
+            filteredOrders = this.data.orders.filter(order => {
+                const orderDate = new Date(order.timestamp);
+                return orderDate.toDateString() === filterDate.toDateString();
+            });
+            console.log(`📊 Filtered to ${filteredOrders.length} orders for ${this.selectedDateWithinMonth}`);
+        } else {
+            console.log(`📊 Showing all ${filteredOrders.length} orders for ${this.formatMonthDisplay(this.activeMonth)}`);
+        }
+        
+        this.renderSalesTable(filteredOrders);
+    }
+    
+    clearDateFilter() {
+        this.selectedDateWithinMonth = null;
+        const dateFilter = document.getElementById('dateWithinMonthFilter');
+        if (dateFilter) {
+            dateFilter.value = '';
+        }
+        this.filterSalesWithinMonth();
     }
     
     bindEvents() {
@@ -330,9 +527,17 @@ class POSSystem {
             document.getElementById('productCategory').addEventListener('change', () => this.updateCategoryRateDisplay());
             document.getElementById('productQuantity').addEventListener('change', () => this.updatePriceDisplay());
             
-            // Sales actions
+            // Sales actions - NEW MONTH-BASED SYSTEM
             document.getElementById('exportSalesBtn').addEventListener('click', () => this.exportSalesCSV());
-            document.getElementById('salesPeriodFilter').addEventListener('change', () => this.filterSales());
+            
+            // Month navigation
+            document.getElementById('prevMonthBtn').addEventListener('click', () => this.changeToPreviousMonth());
+            document.getElementById('nextMonthBtn').addEventListener('click', () => this.changeToNextMonth());
+            document.getElementById('activeMonthFilter').addEventListener('change', (e) => this.changeToMonth(e.target.value));
+            
+            // Date filter within month
+            document.getElementById('dateWithinMonthFilter').addEventListener('change', () => this.filterSalesWithinMonth());
+            document.getElementById('clearDateFilter').addEventListener('click', () => this.clearDateFilter());
             
             // Analytics
             document.getElementById('analyticsPeriodFilter').addEventListener('change', () => this.updateAnalytics());
@@ -1129,19 +1334,21 @@ class POSSystem {
     }
     
     renderSales() {
-        // Clear localStorage cache and force fresh load from Firebase for sales view
-        console.log('🔄 renderSales() called - forcing fresh data load from Firebase');
+        // NEW MONTH-BASED SALES VIEW
+        console.log('🔄 renderSales() called - initializing month-based sales view');
+        
+        // Load settings and metadata
         this.loadDataFromFirebaseOnly().then(() => {
             this.currentSalesStatus = 'completed'; // Set default status
-            this.filterSales();
-            this.updateSalesSummary();
-            console.log('✓ Sales data refreshed from Firebase');
+            this.initializeMonthView();
+            this.loadSalesForMonth(); // Load current month's sales
+            console.log('✓ Sales data initialized for month:', this.formatMonthDisplay(this.activeMonth));
         }).catch(error => {
             console.error('Error loading data for sales:', error);
-            // Fallback to existing data
+            // Fallback: still initialize month view with existing data
             this.currentSalesStatus = 'completed';
-            this.filterSales();
-            this.updateSalesSummary();
+            this.initializeMonthView();
+            this.loadSalesForMonth();
         });
     }
     
@@ -1210,70 +1417,30 @@ class POSSystem {
             console.warn(`⚠️ Could not find tab button with data-status="${status}"`);
         }
         
-        this.filterSales();
+        // Call the new month-based filtering
+        this.filterSalesWithinMonth();
         this.updateSalesSummary();
-        console.log(`✓ filterSales() and updateSalesSummary() called`);
+        console.log(`✓ filterSalesWithinMonth() and updateSalesSummary() called for status: ${status}`);
     }
     
     filterSales() {
-        const period = document.getElementById('salesPeriodFilter').value;
-        const status = this.currentSalesStatus || 'completed';
-        console.log(`🔍 filterSales() - period: ${period}, status: ${status}`);
-        
-        const now = new Date();
-        let filteredOrders = this.data.orders;
-        
-        switch (period) {
-            case 'today':
-                filteredOrders = this.data.orders.filter(order => 
-                    new Date(order.timestamp).toDateString() === now.toDateString()
-                );
-                break;
-            case 'week':
-                const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                filteredOrders = this.data.orders.filter(order => 
-                    new Date(order.timestamp) >= weekAgo
-                );
-                break;
-            case 'month':
-                const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-                filteredOrders = this.data.orders.filter(order => 
-                    new Date(order.timestamp) >= monthAgo
-                );
-                break;
-            case 'year':
-                const yearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-                filteredOrders = this.data.orders.filter(order => 
-                    new Date(order.timestamp) >= yearAgo
-                );
-                break;
-            case 'all':
-                // All time - no additional filtering needed
-                filteredOrders = this.data.orders;
-                break;
-            default:
-                filteredOrders = this.data.orders;
-        }
-        
-        console.log(`📊 Orders after period filter (${period}): ${filteredOrders.length}`);
-        
-        // Filter by status (completed, returned, or deleted)
-        filteredOrders = filteredOrders.filter(order => (order.status || 'completed') === status);
-        
-        console.log(`📊 Orders after status filter (${status}): ${filteredOrders.length}`);
-        console.log(`📋 Filtered orders to display:`, filteredOrders.map(o => ({ id: o.id, status: o.status })));
-        
-        this.renderSalesTable(filteredOrders);
-        this.updateSalesSummary();
+        // NEW MONTH-BASED SALES FILTERING
+        // This function is called when rendering sales tab
+        // Month-based filtering happens in filterSalesWithinMonth()
+        this.loadSalesForMonth();
     }
     
     renderSalesTable(orders) {
         const tbody = document.getElementById('salesTableBody');
         tbody.innerHTML = '';
         
-        orders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        // Apply status filter
+        const currentStatus = this.currentSalesStatus || 'completed';
+        const filteredByStatus = orders.filter(order => (order.status || 'completed') === currentStatus);
         
-        orders.forEach(order => {
+        filteredByStatus.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        filteredByStatus.forEach(order => {
             const paymentMethod = this.data.paymentMethods.find(pm => pm.id === order.paymentMethod);
             const status = order.status || 'completed';
             const statusColor = status === 'returned' ? '#EF4444' : status === 'deleted' ? '#9CA3AF' : '#10B981';
@@ -1309,12 +1476,24 @@ class POSSystem {
     }
     
     updateSalesSummary() {
-        const period = document.getElementById('salesPeriodFilter').value;
-        const orders = this.getFilteredOrders(period);
-        
-        // Filter by the current status tab
+        // NEW MONTH-BASED SUMMARY
+        // Calculate revenue for current month and currently selected status
         const currentStatus = this.currentSalesStatus || 'completed';
-        const statusFilteredOrders = orders.filter(o => (o.status || 'completed') === currentStatus);
+        
+        // Get all orders in current month
+        let monthOrders = this.data.orders;
+        
+        // Apply date filter if one is selected
+        if (this.selectedDateWithinMonth) {
+            const filterDate = new Date(this.selectedDateWithinMonth);
+            monthOrders = monthOrders.filter(order => {
+                const orderDate = new Date(order.timestamp);
+                return orderDate.toDateString() === filterDate.toDateString();
+            });
+        }
+        
+        // Filter by status
+        const statusFilteredOrders = monthOrders.filter(o => (o.status || 'completed') === currentStatus);
         
         // Only count completed orders for revenue (don't count returned or deleted)
         const completedOrders = currentStatus === 'completed' ? statusFilteredOrders : [];
@@ -1322,17 +1501,21 @@ class POSSystem {
         const totalOrders = completedOrders.length;
         const avgOrder = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
         
+        const periodLabel = this.selectedDateWithinMonth ? 
+            `${new Date(this.selectedDateWithinMonth).toLocaleDateString()}` : 
+            this.formatMonthDisplay(this.activeMonth);
+        
         const summaryContainer = document.getElementById('salesSummary');
         summaryContainer.innerHTML = `
             <div class="summary-card">
                 <h3>Total Revenue</h3>
                 <div class="value">Rs. ${totalRevenue}</div>
-                <div class="change">${period === 'today' ? 'Today' : 'This ' + period.charAt(0).toUpperCase() + period.slice(1)}</div>
+                <div class="change">${periodLabel}</div>
             </div>
             <div class="summary-card">
                 <h3>Total Orders</h3>
                 <div class="value">${totalOrders}</div>
-                <div class="change">${period === 'today' ? 'Today' : 'This ' + period.charAt(0).toUpperCase() + period.slice(1)}</div>
+                <div class="change">${periodLabel}</div>
             </div>
             <div class="summary-card">
                 <h3>Average Order</h3>
@@ -1420,6 +1603,7 @@ class POSSystem {
             });
         }
     }
+    
     
     exportSalesCSV() {
         const period = document.getElementById('salesPeriodFilter').value;
@@ -1591,7 +1775,8 @@ class POSSystem {
             document.getElementById('productName').value = this.editingProduct.name;
             document.getElementById('productPrice').value = this.editingProduct.price;
             document.getElementById('productCategory').value = this.editingProduct.category;
-            document.getElementById('productQuantity').value = '';
+            // Restore quantity for weight-based items
+            document.getElementById('productQuantity').value = this.editingProduct.quantity || '';
         } else {
             document.getElementById('productForm').reset();
         }
@@ -1604,6 +1789,9 @@ class POSSystem {
     
     updateCategoryRateDisplay() {
         const categoryId = document.getElementById('productCategory').value;
+        const quantitySelect = document.getElementById('productQuantity');
+        const priceInput = document.getElementById('productPrice');
+        
         if (!categoryId) {
             document.getElementById('categoryRateInfo').style.display = 'none';
             document.getElementById('quantitySelectGroup').style.display = 'none';
@@ -1630,19 +1818,18 @@ class POSSystem {
         if (['kg', 'gram', 'ml', 'liter'].includes(category.unit)) {
             document.getElementById('quantitySelectGroup').style.display = 'block';
             document.getElementById('priceFieldGroup').style.display = 'none';
-            const quantitySelect = document.getElementById('productQuantity');
-            const priceInput = document.getElementById('productPrice');
             quantitySelect.required = true;
             quantitySelect.disabled = false;
             priceInput.required = false;
-            quantitySelect.value = '';
+            // Preserve existing quantity value if editing, otherwise reset
+            if (!this.editingProduct || this.editingProduct.quantity === undefined) {
+                quantitySelect.value = '';
+            }
             document.getElementById('pricePreview').style.display = 'none';
         } else {
             // For pcs, show price field
             document.getElementById('quantitySelectGroup').style.display = 'none';
             document.getElementById('priceFieldGroup').style.display = 'block';
-            const quantitySelect = document.getElementById('productQuantity');
-            const priceInput = document.getElementById('productPrice');
             quantitySelect.required = false;
             quantitySelect.disabled = true;
             priceInput.required = true;
