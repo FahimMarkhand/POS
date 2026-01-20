@@ -220,14 +220,7 @@ class POSSystem {
             orders: [],
             settings: { 
                 currency: "PKR", 
-                receiptWidth: 80, 
-                autoPrint: false, 
-                showTax: false, 
-                nextOrderNumber: 1,
-                thermalWidth: 80,
-                printOrientation: 'portrait',
-                printMargin: 0,
-                printCopies: 1
+                nextOrderNumber: 1
             }
         };
     }
@@ -336,9 +329,6 @@ class POSSystem {
         document.getElementById('storeEmail').value = this.data.store.email || '';
         document.getElementById('receiptHeader').value = this.data.store.receiptHeader || '';
         document.getElementById('receiptFooter').value = this.data.store.receiptFooter || '';
-        
-        // Load printer settings
-        document.getElementById('printCopies').value = this.data.settings.printCopies || 1;
         
         // Render categories list
         this.renderCategoriesList();
@@ -545,8 +535,6 @@ class POSSystem {
             // Settings
             document.getElementById('saveStoreInfo').addEventListener('click', () => this.saveStoreInfo());
             document.getElementById('saveReceiptSettings').addEventListener('click', () => this.saveReceiptSettings());
-            document.getElementById('savePrinterSettings').addEventListener('click', () => this.savePrinterSettings());
-            document.getElementById('testPrint').addEventListener('click', () => this.testPrint());
             
             // Category management
             document.getElementById('addCategoryBtn').addEventListener('click', () => this.addCategory());
@@ -2095,79 +2083,9 @@ class POSSystem {
     }
     
     savePrinterSettings() {
-        this.data.settings.autoPrint = document.getElementById('autoPrintEnabled').checked;
-        this.data.settings.thermalWidth = parseInt(document.getElementById('thermalWidth').value);
-        this.data.settings.printOrientation = document.getElementById('printOrientation').value;
-        this.data.settings.printMargin = parseFloat(document.getElementById('printMargin').value);
-        this.data.settings.printCopies = parseInt(document.getElementById('printCopies').value);
-        
-        this.saveData();
-        this.updatePrintStyles();
-        this.showToast('Printer settings saved successfully', 'success');
-    }
-    
-    testPrint() {
-        this.showToast('Opening print dialog for test page...', 'info');
-        console.log('Test Print initiated');
-        console.log('Printer Settings:', this.data.settings);
-        
-        // Create a simple test receipt
-        const testContent = `
-            <div class="receipt-header" style="text-align: center; margin-bottom: 10px;">
-                <div style="font-size: 14px; font-weight: bold;">TEST PRINT PAGE</div>
-                <div style="font-size: 11px;">${this.data.store.name}</div>
-                <div style="font-size: 10px;">${this.data.store.address}</div>
-                <div style="font-size: 10px;">${this.data.store.phone}</div>
-            </div>
-            <div style="font-size: 11px; border-bottom: 1px dashed #999; padding-bottom: 8px; margin-bottom: 8px;">
-                <div>Test Order: ORD-TEST-001</div>
-                <div>Date: ${new Date().toLocaleString()}</div>
-                <div>Paper Width: 80mm (Thermal Printer)</div>
-            </div>
-            <div style="font-size: 11px; border-bottom: 1px dashed #999; padding-bottom: 8px; margin-bottom: 8px;">
-                <div style="display: flex; justify-content: space-between;">
-                    <span>Chicken Biryani x1</span>
-                    <span>Rs. 320</span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                    <span>Mutton Karahi x1</span>
-                    <span>Rs. 550</span>
-                </div>
-                <div style="border-top: 1px dashed #999; padding-top: 5px; margin-top: 5px; display: flex; justify-content: space-between; font-weight: bold;">
-                    <span>Total:</span>
-                    <span>Rs. 870</span>
-                </div>
-            </div>
-            <div style="text-align: center; font-size: 10px; margin-top: 10px;">
-                <div>${this.data.store.receiptHeader}</div>
-                <div>${this.data.store.receiptFooter}</div>
-                <div style="margin-top: 5px; font-size: 9px;">✓ Test print successful</div>
-            </div>
-        `;
-        
-        const receiptContent = document.getElementById('receiptContent');
-        if (!receiptContent) {
-            this.showToast('Receipt content element not found', 'error');
-            return;
-        }
-        
-        const originalContent = receiptContent.innerHTML;
-        receiptContent.innerHTML = testContent;
-        
-        // Wait a moment then print
-        setTimeout(() => {
-            try {
-                this.performPrint();
-                // Restore original content
-                setTimeout(() => {
-                    receiptContent.innerHTML = originalContent;
-                }, 500);
-            } catch (error) {
-                console.error('Error in testPrint:', error);
-                receiptContent.innerHTML = originalContent;
-                this.showToast('Error: ' + error.message, 'error');
-            }
-        }, 100);
+        // Printer settings are now hard-coded for fixed thermal printer output
+        // All settings are fixed to ensure consistent receipt printing
+        this.showToast('Printer settings are locked to optimal values', 'info');
     }
     
     updatePrintStyles() {
@@ -2177,13 +2095,13 @@ class POSSystem {
             existingStyle.remove();
         }
         
-        // Create new print styles based on settings
-        const width = this.data.settings.thermalWidth;
-        const margin = this.data.settings.printMargin;
+        // Hard-coded optimal settings for 80mm thermal printer
+        // These values are fixed to ensure consistent output
+        const paperWidth = 72; // mm - safe zone for 80mm printer
         const styles = `
             @page {
-                size: ${width}mm auto;
-                margin: ${margin}mm ${margin * 0.75}mm;
+                size: ${paperWidth}mm auto;
+                margin: 0mm 0mm 0mm 0mm;
             }
         `;
         
@@ -2194,7 +2112,8 @@ class POSSystem {
     }
     
     performPrint() {
-        const copies = this.data.settings.printCopies || 1;
+        // Hard-coded print settings - no database dependencies
+        const copies = 1; // Fixed to 1 copy - if user needs more, they print again
         
         // Get receipt content
         const receiptContent = document.getElementById('receiptContent');
@@ -2221,70 +2140,78 @@ class POSSystem {
                         box-sizing: border-box;
                     }
                     
-                    /* PAGE SETUP - 70mm is the safe zone for 80mm printers */
+                    /* PAGE SETUP - Fixed for 80mm thermal printer */
                     @page {
-                        size: 72mm auto; /* Force printer to recognize narrower content */
-                        margin: 0mm;     /* Remove browser margins */
+                        size: 72mm auto;
+                        margin: 0mm;
+                        padding: 0mm;
                     }
 
                     html, body {
-                        width: 54mm;     /* CRITICAL: Constrain content width */
-                        max-width: 54mm;
+                        width: 65mm;
+                        max-width: 65mm;
                         margin: 0;
+                        padding: 0;
                         background: #fff;
                     }
                     
                     body {
-                        font-family: 'Roboto', sans-serif;
-                        font-size: 9pt;  /* Slightly smaller font to fit everything */
-                        line-height: 1.3;
-                        padding: 1mm 2mm 1mm 1mm; /* Right padding ensures it doesn't touch the cut zone */
+                        font-family: 'Roboto', monospace;
+                        font-size: 9pt;
+                        line-height: 1.2;
+                        padding: 1mm 1mm 1mm 1mm;
                         color: #000;
+                        overflow: hidden;
                     }
                     
                     /* HEADER STYLES */
                     .receipt-header {
                         text-align: center;
-                        margin-bottom: 2mm;
-                        padding-bottom: 2mm;
+                        margin-bottom: 1.5mm;
+                        padding-bottom: 1.5mm;
                         border-bottom: 1px dashed #000;
                     }
                     
                     .receipt-logo {
-                        width: 50px; /* Smaller logo */
+                        width: 40px;
                         height: auto;
-                        margin: 0 auto 1mm;
+                        margin: 0 auto 0.5mm;
                         display: block;
                     }
                     
                     .receipt-store-name {
-                        font-size: 10pt;
+                        font-size: 9pt;
                         font-weight: bold;
-                        margin-bottom: 1mm;
+                        margin-bottom: 0.5mm;
+                        line-height: 1.1;
                     }
                     
                     .receipt-store-info {
-                        font-size: 8pt;
+                        font-size: 7pt;
+                        line-height: 1;
+                        margin: 0.2mm 0;
                     }
 
                     .receipt-title {
-                        font-size: 10pt;
+                        font-size: 8pt;
                         font-weight: bold;
-                        margin-top: 1mm;
+                        margin-top: 0.5mm;
                         text-transform: uppercase;
                     }
                     
                     /* META INFO (Date/Invoice) */
                     .receipt-meta {
                         border-bottom: 1px dashed #000;
-                        padding-bottom: 1mm;
-                        margin-bottom: 1mm;
-                        font-size: 8pt;
+                        padding-bottom: 0.5mm;
+                        margin-bottom: 0.5mm;
+                        font-size: 7pt;
                     }
                     
                     .receipt-meta-row {
                         display: flex;
                         justify-content: space-between;
+                        line-height: 1;
+                        margin-bottom: 0.2mm;
                     }
                     
                     /* ITEM TABLE */
@@ -2293,68 +2220,75 @@ class POSSystem {
                         justify-content: space-between;
                         font-weight: bold;
                         border-bottom: 1px dashed #000;
-                        padding-bottom: 1mm;
-                        margin-bottom: 1mm;
-                        font-size: 8pt;
+                        padding-bottom: 0.5mm;
+                        margin-bottom: 0.5mm;
+                        font-size: 7pt;
                     }
                     
                     .receipt-item {
                         display: flex;
                         justify-content: space-between;
-                        margin-bottom: 1mm;
-                        font-size: 8.5pt;
+                        margin-bottom: 0.5mm;
+                        font-size: 7.5pt;
+                        line-height: 1;
                     }
                     
-                    /* ADJUSTED COLUMNS FOR 70MM WIDTH */
+                    /* OPTIMIZED COLUMNS FOR 70MM WIDTH */
                     .col-product {
-                        flex: 1; /* Takes remaining space */
+                        flex: 1;
                         text-align: left;
                         padding-right: 1mm;
                         overflow: hidden;
-                        text-overflow: ellipsis; 
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
                     }
                     
                     .col-qty {
-                        width: 6mm;  /* Reduced width */
+                        width: 6mm;
                         text-align: center;
+                        padding: 0 0.5mm;
                     }
                     
                     .col-price {
-                        width: 13mm; /* Reduced width */
+                        width: 13mm;
                         text-align: right;
+                        padding: 0 0.5mm;
                     }
                     
                     .col-total {
                         width: 14mm;
                         text-align: right;
+                        padding: 0 0.5mm;
                     }
                     
                     /* TOTALS SECTION */
                     .receipt-totals {
-                        margin-top: 2mm;
-                        padding-top: 1mm;
+                        margin-top: 1mm;
+                        padding-top: 0.5mm;
                         border-top: 1px dashed #000;
                     }
                     
                     .receipt-total-line {
                         display: flex;
                         justify-content: space-between;
-                        margin-bottom: 0.5mm;
-                        font-size: 9pt;
+                        margin-bottom: 0.3mm;
+                        font-size: 8pt;
+                        line-height: 1;
                     }
                     
                     .receipt-total-line.final {
                         font-weight: bold;
-                        font-size: 11pt;
-                        margin-top: 1mm;
+                        font-size: 9pt;
+                        margin-top: 0.5mm;
                         border-top: 1px dashed #000;
-                        padding-top: 1mm;
+                        padding-top: 0.5mm;
                     }
                     
                     .receipt-footer {
                         text-align: center;
-                        font-size: 8pt;
-                        margin-top: 3mm;
+                        font-size: 7pt;
+                        margin-top: 1.5mm;
+                        line-height: 1.1;
                     }
                 </style>
             </head>
@@ -2401,7 +2335,7 @@ class POSSystem {
                 try {
                     frameWindow.focus();
                     frameWindow.print();
-                    this.showToast('Sent to Printer...', 'info');
+                    this.showToast('Receipt sent to printer...', 'info');
                 } catch (err) {
                     console.error('Print error:', err);
                     this.showToast('Error printing receipt.', 'error');
