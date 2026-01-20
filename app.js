@@ -2228,8 +2228,8 @@ class POSSystem {
                     }
 
                     html, body {
-                        width: 52mm;     /* CRITICAL: Constrain content width */
-                        max-width: 52mm;
+                        width: 54mm;     /* CRITICAL: Constrain content width */
+                        max-width: 54mm;
                         margin: 0;
                         background: #fff;
                     }
@@ -2590,4 +2590,5 @@ document.addEventListener('visibilitychange', () => {
         window.posSystem.saveData();
     }
 });
+
 
