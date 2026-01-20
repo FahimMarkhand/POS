@@ -22,6 +22,17 @@ class POSSystem {
     
     async init() {
         await this.loadData();
+        
+        // Check and warn about duplicates on startup
+        const orderIds = this.data.orders.map(o => o.id);
+        const duplicates = orderIds.filter((id, index) => orderIds.indexOf(id) !== index);
+        if (duplicates.length > 0) {
+            const uniqueDups = [...new Set(duplicates)];
+            console.warn(`⚠️⚠️⚠️ WARNING: Found ${uniqueDups.length} duplicate order ID(s) on startup:`, uniqueDups);
+            console.warn(`Total duplicate instances: ${orderIds.length - new Set(orderIds).size}`);
+            console.warn('Run posSystem.cleanupDuplicateOrders() in console to clean up');
+        }
+        
         this.initializeUI();
         this.bindEvents();
         this.updatePrintStyles();
@@ -39,7 +50,7 @@ class POSSystem {
             // Try to load from Firebase REST API first with timeout
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout (increased from 3)
                 
                 const response = await fetch('https://poss-2b64e-default-rtdb.asia-southeast1.firebasedatabase.app/posData.json', {
                     signal: controller.signal
@@ -47,28 +58,45 @@ class POSSystem {
                 clearTimeout(timeoutId);
                 
                 if (response.ok) {
-                    this.data = await response.json();
-                    console.log('✓ Data loaded from Firebase');
-                    // Validate that we have categories
-                    if (!this.data.categories || this.data.categories.length === 0) {
-                        console.warn('Firebase data missing categories, using defaults');
-                        this.data.categories = this.getDefaultData().categories;
+                    const firebaseData = await response.json();
+                    if (firebaseData && firebaseData.orders) {
+                        this.data = firebaseData;
+                        console.log('✓ Data loaded from Firebase (fresh)');
+                        // Validate that we have categories
+                        if (!this.data.categories || this.data.categories.length === 0) {
+                            console.warn('Firebase data missing categories, using defaults');
+                            this.data.categories = this.getDefaultData().categories;
+                        }
+                        if (!this.data.products || this.data.products.length === 0) {
+                            console.warn('Firebase data missing products, using defaults');
+                            this.data.products = this.getDefaultData().products;
+                        }
+                        // Ensure all orders have a status field
+                        if (this.data.orders && Array.isArray(this.data.orders)) {
+                            this.data.orders.forEach(order => {
+                                if (!order.status) {
+                                    order.status = 'completed';
+                                }
+                            });
+                            const missingStatus = this.data.orders.filter(o => !o.status);
+                            if (missingStatus.length > 0) {
+                                console.log('⚠️ Fixed missing status for orders:', missingStatus.map(o => o.id));
+                            }
+                        }
+                        // Save to localStorage to update cache
+                        localStorage.setItem('posData', JSON.stringify(this.data));
+                        return;
                     }
-                    if (!this.data.products || this.data.products.length === 0) {
-                        console.warn('Firebase data missing products, using defaults');
-                        this.data.products = this.getDefaultData().products;
-                    }
-                    return;
                 }
             } catch (error) {
                 console.warn('Could not load from Firebase, trying localStorage...', error.message);
             }
             
-            // Try to load from localStorage
+            // Try to load from localStorage as fallback
             const savedData = localStorage.getItem('posData');
             if (savedData) {
                 this.data = JSON.parse(savedData);
-                console.log('✓ Data loaded from localStorage');
+                console.log('✓ Data loaded from localStorage (fallback)');
                 // Validate that we have categories and products
                 if (!this.data.categories || this.data.categories.length === 0) {
                     console.warn('localStorage data missing categories, using defaults');
@@ -77,6 +105,14 @@ class POSSystem {
                 if (!this.data.products || this.data.products.length === 0) {
                     console.warn('localStorage data missing products, using defaults');
                     this.data.products = this.getDefaultData().products;
+                }
+                // Ensure all orders have a status field
+                if (this.data.orders && Array.isArray(this.data.orders)) {
+                    this.data.orders.forEach(order => {
+                        if (!order.status) {
+                            order.status = 'completed';
+                        }
+                    });
                 }
             } else {
                 // Load initial data from data.json directly
@@ -89,11 +125,20 @@ class POSSystem {
                     this.data = this.getDefaultData();
                     console.log('✓ Using default data');
                 }
+                // Ensure all orders have a status field
+                if (this.data.orders && Array.isArray(this.data.orders)) {
+                    this.data.orders.forEach(order => {
+                        if (!order.status) {
+                            order.status = 'completed';
+                        }
+                    });
+                }
             }
         } catch (error) {
             console.error('Error loading data:', error);
             this.data = this.getDefaultData();
         }
+        
         this.saveData();
     }
 
@@ -172,7 +217,11 @@ class POSSystem {
     
     saveData() {
         // Save to localStorage for quick access
-        localStorage.setItem('posData', JSON.stringify(this.data));
+        const dataStr = JSON.stringify(this.data);
+        localStorage.setItem('posData', dataStr);
+        console.log('✓ Data saved to localStorage');
+        console.log('Total orders in storage:', this.data.orders.length);
+        console.log('Deleted orders:', this.data.orders.filter(o => o.status === 'deleted').length);
         
         // Save to Firebase (cloud database)
         this.saveToFirebase();
@@ -198,15 +247,7 @@ class POSSystem {
     }
     
     initializeUI() {
-        // Initialize category filter
-        const categoryFilter = document.getElementById('categoryFilter');
-        categoryFilter.innerHTML = '<option value="">All Categories</option>';
-        this.data.categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.id;
-            option.textContent = category.name;
-            categoryFilter.appendChild(option);
-        });
+        // Category filter removed from POS tab
         
         // Initialize product category select
         const productCategory = document.getElementById('productCategory');
@@ -276,10 +317,6 @@ class POSSystem {
                     this.closeCartSidebar();
                 }
             });
-            
-            // Product search and filter
-            document.getElementById('productSearch').addEventListener('input', () => this.filterProducts());
-            document.getElementById('categoryFilter').addEventListener('change', () => this.filterProducts());
             
             // Cart actions
             document.getElementById('clearCartBtn').addEventListener('click', () => this.clearCart());
@@ -656,27 +693,11 @@ class POSSystem {
         });
     }
     
-    filterProducts() {
-        const searchTerm = document.getElementById('productSearch').value.toLowerCase();
-        const categoryFilter = document.getElementById('categoryFilter').value;
-        const productCards = document.querySelectorAll('.product-card');
-        
-        productCards.forEach((card, index) => {
-            const product = this.data.products[index];
-            const matchesSearch = product.name.toLowerCase().includes(searchTerm) || 
-                                product.description.toLowerCase().includes(searchTerm);
-            const matchesCategory = !categoryFilter || product.category === categoryFilter;
-            
-            if (matchesSearch && matchesCategory) {
-                card.style.display = 'block';
-                card.style.animation = `cardPopIn 0.3s var(--transition-timing) ${index * 0.05}s both`;
-            } else {
-                card.style.display = 'none';
-            }
-        });
-    }
-    
     addToCart(product) {
+        // Get category color for styling cart items
+        const category = this.data.categories.find(c => c.id === product.category);
+        const categoryColor = category?.color || '#D1D5DB';
+        
         const existingItem = this.cart.find(item => item.productId === product.id);
         
         if (existingItem) {
@@ -687,7 +708,8 @@ class POSSystem {
                 name: product.name,
                 price: product.price,
                 quantity: 1,
-                category: product.category
+                category: product.category,
+                categoryColor: categoryColor
             });
         }
         
@@ -712,9 +734,10 @@ class POSSystem {
             return;
         }
         
-        // Get category name
+        // Get category info including color
         const category = this.data.categories.find(c => c.id === categorySelect.value);
         const categoryName = category ? category.name : categorySelect.value;
+        const categoryColor = category?.color || '#D1D5DB';
         
         // Create a custom item
         const customItem = {
@@ -722,7 +745,8 @@ class POSSystem {
             name: categoryName,
             price: parseInt(priceInput.value),
             quantity: 1,
-            category: categorySelect.value
+            category: categorySelect.value,
+            categoryColor: categoryColor
         };
         
         this.cart.push(customItem);
@@ -779,6 +803,12 @@ class POSSystem {
             const cartItem = document.createElement('div');
             cartItem.className = 'cart-item';
             cartItem.setAttribute('data-category', item.category);
+            
+            // Apply category color as inline style
+            const categoryColor = item.categoryColor || '#D1D5DB';
+            cartItem.style.borderColor = categoryColor;
+            cartItem.style.background = `linear-gradient(135deg, ${this.hexToRgba(categoryColor, 0.15)} 0%, ${this.hexToRgba(categoryColor, 0.05)} 100%)`;
+            
             const totalPrice = item.price * item.quantity;
             cartItem.innerHTML = `
                 <div class="cart-item-info">
@@ -846,8 +876,12 @@ class POSSystem {
         const subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const total = subtotal; // No tax for PKR
         
+        // Generate order ID and immediately increment counter to prevent duplicates
+        const orderNumber = this.data.settings.nextOrderNumber;
+        this.data.settings.nextOrderNumber += 1;  // Increment IMMEDIATELY to prevent duplicate IDs
+        
         const order = {
-            id: `ORD-${String(this.data.settings.nextOrderNumber).padStart(3, '0')}`,
+            id: `ORD-${String(orderNumber).padStart(3, '0')}`,
             timestamp: new Date().toISOString(),
             items: this.cart.map(item => ({
                 productId: item.productId,
@@ -1057,15 +1091,20 @@ class POSSystem {
         
         console.log('Proceeding with print for order:', this.tempOrder.id);
         
-        // Save the order to database when print is confirmed
+        // Save the order to database when print is confirmed (only if it's new)
         try {
-            this.data.orders.push(this.tempOrder);
-            this.data.settings.nextOrderNumber += 1;
-            this.saveData();
-            
-            this.cart = [];
-            this.renderCart();
-            this.updateCartSummary();
+            // Check if order already exists in database
+            const existingOrder = this.data.orders.find(o => o.id === this.tempOrder.id);
+            if (!existingOrder) {
+                // New order - save it
+                this.data.orders.push(this.tempOrder);
+                // Note: nextOrderNumber was already incremented in checkout()
+                this.saveData();
+                
+                this.cart = [];
+                this.renderCart();
+                this.updateCartSummary();
+            }
             
             this.showToast(`Order ${this.tempOrder.id} being sent to printer...`, 'info');
             
@@ -1090,12 +1129,97 @@ class POSSystem {
     }
     
     renderSales() {
+        // Clear localStorage cache and force fresh load from Firebase for sales view
+        console.log('🔄 renderSales() called - forcing fresh data load from Firebase');
+        this.loadDataFromFirebaseOnly().then(() => {
+            this.currentSalesStatus = 'completed'; // Set default status
+            this.filterSales();
+            this.updateSalesSummary();
+            console.log('✓ Sales data refreshed from Firebase');
+        }).catch(error => {
+            console.error('Error loading data for sales:', error);
+            // Fallback to existing data
+            this.currentSalesStatus = 'completed';
+            this.filterSales();
+            this.updateSalesSummary();
+        });
+    }
+    
+    async loadDataFromFirebaseOnly() {
+        // This function ONLY loads from Firebase, no localStorage fallback
+        console.log('🌐 Attempting to load data directly from Firebase...');
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+            
+            const response = await fetch('https://poss-2b64e-default-rtdb.asia-southeast1.firebasedatabase.app/posData.json', {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+                const firebaseData = await response.json();
+                if (firebaseData && firebaseData.orders) {
+                    this.data = firebaseData;
+                    console.log('✓✓✓ Data loaded from Firebase successfully');
+                    console.log('Total orders:', this.data.orders.length);
+                    console.log('Order statuses:', this.data.orders.map(o => ({ id: o.id, status: o.status })));
+                    
+                    // Validate that we have categories and products
+                    if (!this.data.categories || this.data.categories.length === 0) {
+                        this.data.categories = this.getDefaultData().categories;
+                    }
+                    if (!this.data.products || this.data.products.length === 0) {
+                        this.data.products = this.getDefaultData().products;
+                    }
+                    
+                    // Ensure all orders have a status field
+                    this.data.orders.forEach(order => {
+                        if (!order.status) {
+                            order.status = 'completed';
+                            console.log(`⚠️ Order ${order.id} missing status, set to completed`);
+                        }
+                    });
+                    
+                    // Update localStorage with fresh Firebase data
+                    localStorage.setItem('posData', JSON.stringify(this.data));
+                    return;
+                }
+            } else {
+                throw new Error(`Firebase returned status ${response.status}`);
+            }
+        } catch (error) {
+            console.error('❌ Failed to load from Firebase:', error.message);
+            throw error;
+        }
+    }
+    
+    filterSalesByStatus(status) {
+        console.log(`📋 filterSalesByStatus called with status: ${status}`);
+        this.currentSalesStatus = status;
+        
+        // Update sub-tab styling using CSS classes
+        document.querySelectorAll('.sales-subtab').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        const activeBtn = document.querySelector(`[data-status="${status}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+            console.log(`✓ Tab "${status}" marked as active`);
+        } else {
+            console.warn(`⚠️ Could not find tab button with data-status="${status}"`);
+        }
+        
         this.filterSales();
         this.updateSalesSummary();
+        console.log(`✓ filterSales() and updateSalesSummary() called`);
     }
     
     filterSales() {
         const period = document.getElementById('salesPeriodFilter').value;
+        const status = this.currentSalesStatus || 'completed';
+        console.log(`🔍 filterSales() - period: ${period}, status: ${status}`);
+        
         const now = new Date();
         let filteredOrders = this.data.orders;
         
@@ -1123,7 +1247,21 @@ class POSSystem {
                     new Date(order.timestamp) >= yearAgo
                 );
                 break;
+            case 'all':
+                // All time - no additional filtering needed
+                filteredOrders = this.data.orders;
+                break;
+            default:
+                filteredOrders = this.data.orders;
         }
+        
+        console.log(`📊 Orders after period filter (${period}): ${filteredOrders.length}`);
+        
+        // Filter by status (completed, returned, or deleted)
+        filteredOrders = filteredOrders.filter(order => (order.status || 'completed') === status);
+        
+        console.log(`📊 Orders after status filter (${status}): ${filteredOrders.length}`);
+        console.log(`📋 Filtered orders to display:`, filteredOrders.map(o => ({ id: o.id, status: o.status })));
         
         this.renderSalesTable(filteredOrders);
         this.updateSalesSummary();
@@ -1174,8 +1312,12 @@ class POSSystem {
         const period = document.getElementById('salesPeriodFilter').value;
         const orders = this.getFilteredOrders(period);
         
-        // Only count completed orders for revenue
-        const completedOrders = orders.filter(o => (o.status || 'completed') === 'completed');
+        // Filter by the current status tab
+        const currentStatus = this.currentSalesStatus || 'completed';
+        const statusFilteredOrders = orders.filter(o => (o.status || 'completed') === currentStatus);
+        
+        // Only count completed orders for revenue (don't count returned or deleted)
+        const completedOrders = currentStatus === 'completed' ? statusFilteredOrders : [];
         const totalRevenue = completedOrders.reduce((sum, order) => sum + order.total, 0);
         const totalOrders = completedOrders.length;
         const avgOrder = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
@@ -1210,6 +1352,8 @@ class POSSystem {
     reprintReceipt(orderId) {
         const order = this.data.orders.find(o => o.id === orderId);
         if (order) {
+            // Store order for printing
+            this.tempOrder = order;
             this.showReceipt(order);
             // Open modal to allow user to print
             const modal = document.getElementById('receiptModal');
@@ -1227,21 +1371,53 @@ class POSSystem {
             order.status = 'returned';
             order.returnedAt = new Date().toISOString();
             this.saveData();
-            this.filterSales();
+            // Switch to returned tab and filter
+            this.filterSalesByStatus('returned');
             this.updateAnalytics();
             this.showToast(`Order ${orderId} marked as returned`, 'success');
         }
     }
     
     deleteOrder(orderId) {
-        const order = this.data.orders.find(o => o.id === orderId);
-        if (order && confirm(`Are you sure you want to delete order ${orderId}? This cannot be undone.`)) {
-            order.status = 'deleted';
-            order.deletedAt = new Date().toISOString();
+        // Find ALL orders with this ID (handle duplicates)
+        const orderIndices = this.data.orders
+            .map((o, index) => o.id === orderId ? index : -1)
+            .filter(index => index !== -1);
+        
+        if (orderIndices.length === 0) {
+            console.warn(`Order ${orderId} not found in orders array`);
+            this.showToast(`Order ${orderId} not found`, 'error');
+            return;
+        }
+        
+        if (confirm(`Are you sure you want to delete order ${orderId}? This cannot be undone.${orderIndices.length > 1 ? ` (Found ${orderIndices.length} duplicate orders)` : ''}`)) {
+            console.log(`🗑️ Deleting ${orderIndices.length} order(s) with ID ${orderId}`);
+            
+            // Delete all instances of this order
+            orderIndices.forEach((index, i) => {
+                console.log(`  🗑️ Deleting order at index ${index}:`, this.data.orders[index].id, 'subtotal:', this.data.orders[index].subtotal);
+                this.data.orders[index].status = 'deleted';
+                this.data.orders[index].deletedAt = new Date().toISOString();
+            });
+            
+            console.log(`✓ All ${orderIndices.length} order(s) marked as deleted`);
+            
             this.saveData();
-            this.filterSales();
-            this.updateAnalytics();
-            this.showToast(`Order ${orderId} marked as deleted`, 'success');
+            console.log(`✓ Data saved to Firebase and localStorage`);
+            
+            // Reload fresh data from Firebase to ensure consistency
+            this.loadDataFromFirebaseOnly().then(() => {
+                console.log(`✓ Fresh data reloaded from Firebase after deletion`);
+                this.filterSalesByStatus('deleted');
+                this.updateAnalytics();
+                this.showToast(`${orderIndices.length} order(s) with ID ${orderId} moved to deleted section`, 'success');
+            }).catch(error => {
+                console.error('Failed to reload after deletion:', error);
+                // Fallback: just filter without reloading
+                this.filterSalesByStatus('deleted');
+                this.updateAnalytics();
+                this.showToast(`Order ${orderId} marked as deleted (but reload failed)`, 'warning');
+            });
         }
     }
     
@@ -1305,6 +1481,8 @@ class POSSystem {
             groupedProducts[category.id] = {
                 name: category.name,
                 color: category.color,
+                basePrice: category.basePrice,
+                unit: category.unit,
                 products: this.data.products.filter(p => p.category === category.id)
             };
         });
@@ -1322,9 +1500,23 @@ class POSSystem {
             categoryHeader.className = 'menu-category-header';
             categoryHeader.style.backgroundColor = categoryData.color + '20';
             categoryHeader.style.borderLeftColor = categoryData.color;
+            
+            // Format base price display
+            let basePriceDisplay = '';
+            if (categoryData.basePrice && categoryData.basePrice > 0) {
+                const unitLabel = {
+                    'pcs': 'pcs',
+                    'kg': 'kg',
+                    'gram': 'g',
+                    'ml': 'ml',
+                    'liter': 'L'
+                }[categoryData.unit] || categoryData.unit || 'unit';
+                basePriceDisplay = ` - Rs. ${categoryData.basePrice}/${unitLabel}`;
+            }
+            
             categoryHeader.innerHTML = `
                 <h3 style="color: ${categoryData.color}; margin: 0;">
-                    <i class="fas fa-tag"></i> ${categoryData.name}
+                    <i class="fas fa-tag"></i> ${categoryData.name}${basePriceDisplay}
                 </h3>
             `;
             categorySection.appendChild(categoryHeader);
@@ -2115,11 +2307,53 @@ class POSSystem {
     }
     
     clearAllData() {
-        if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
-            if (confirm('This will delete all products, orders, and settings. Are you absolutely sure?')) {
+        if (confirm('Are you sure you want to clear all DATA? This cannot be undone.')) {
+            if (confirm('This will delete all products, orders, and settings from localStorage. Are you absolutely sure?')) {
+                console.log('🗑️ Clearing localStorage and reloading from Firebase...');
                 localStorage.removeItem('posData');
-                location.reload();
+                // Reload data from Firebase
+                this.loadDataFromFirebaseOnly().then(() => {
+                    this.showToast('Data cleared and reloaded from Firebase', 'success');
+                    // Refresh current view
+                    const activeTab = document.querySelector('.nav-tab.active').dataset.tab;
+                    this.switchTab(activeTab);
+                }).catch(() => {
+                    location.reload();
+                });
             }
+        }
+    }
+    
+    cleanupDuplicateOrders() {
+        // Find and remove duplicate order IDs, keeping only the latest one
+        const seenIds = new Set();
+        const indicesToRemove = [];
+        
+        // Iterate in reverse to keep the latest occurrence
+        for (let i = this.data.orders.length - 1; i >= 0; i--) {
+            const orderId = this.data.orders[i].id;
+            if (seenIds.has(orderId)) {
+                console.warn(`⚠️ Found duplicate order: ${orderId} at index ${i}, marking for removal`);
+                indicesToRemove.push(i);
+            } else {
+                seenIds.add(orderId);
+            }
+        }
+        
+        // Remove duplicates (remove in reverse order to maintain indices)
+        if (indicesToRemove.length > 0) {
+            console.log(`🧹 Removing ${indicesToRemove.length} duplicate order(s)`);
+            indicesToRemove.forEach(index => {
+                console.log(`  Removing duplicate: ${this.data.orders[index].id}`);
+                this.data.orders.splice(index, 1);
+            });
+            this.saveData();
+            this.showToast(`Cleaned up ${indicesToRemove.length} duplicate orders`, 'success');
+            return true;
+        } else {
+            console.log('✓ No duplicate orders found');
+            this.showToast('No duplicate orders found', 'info');
+            return false;
         }
     }
     

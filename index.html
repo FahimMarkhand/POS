@@ -48,6 +48,7 @@
                 <span class="tab-text">Settings</span>
             </button>
             <div class="connectivity-status">
+               <div class="connectivity-status">
                 <div id="connectivityIndicator" class="connectivity-indicator online" title="Online - All changes syncing">
                     <i class="fas fa-wifi"></i> Online
                 </div>
@@ -63,15 +64,6 @@
                     <div class="products-section">
                         <div class="products-header">
                             <h2>Menu Items</h2>
-                            <div class="search-filter">
-                                <div class="search-input-wrapper">
-                                    <i class="fas fa-search search-icon"></i>
-                                    <input type="text" id="productSearch" placeholder="Search products..." class="search-input">
-                                </div>
-                                <select id="categoryFilter" class="filter-select">
-                                    <option value="">All Categories</option>
-                                </select>
-                            </div>
                         </div>
                         
                         <!-- Manual KG Entry Section -->
@@ -87,8 +79,7 @@
                                        class="form-input"
                                        min="1"
                                        step="1">
-                                <span class="quantity-preview" id="quantityPreview">Qty: 0</span>
-                                <button class="btn-add-custom" onclick="posSystem.addCustomKgItem()">Add</button>
+                                <button class="btn-add-custom" onclick="posSystem.addCustomKgItem()" style="flex: 1; padding: 12px 24px; font-size: 1.1rem; font-weight: 600;">Add</button>
                             </div>
                         </div>
                         
@@ -146,9 +137,24 @@
                         </button>
                     </div>
                 </div>
+
                 <div class="sales-summary" id="salesSummary">
                     <!-- Summary cards will be populated by JavaScript -->
                 </div>
+
+                <!-- Sales Sub-tabs -->
+                <div class="sales-subtabs">
+                    <button class="sales-subtab active" data-status="completed" onclick="posSystem.filterSalesByStatus('completed')">
+                        Completed
+                    </button>
+                    <button class="sales-subtab" data-status="returned" onclick="posSystem.filterSalesByStatus('returned')">
+                        Returned
+                    </button>
+                    <button class="sales-subtab" data-status="deleted" onclick="posSystem.filterSalesByStatus('deleted')">
+                        Deleted
+                    </button>
+                </div>
+
                 <div class="sales-table-container">
                     <table class="sales-table" id="salesTable">
                         <thead>
@@ -611,5 +617,3 @@
         // Open browser console and type: posSystem.offline.debugInfo()
         // This will show you the current connectivity and sync queue status
     </script>
-</body>
-</html>

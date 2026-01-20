@@ -2404,6 +2404,55 @@ textarea.form-input {
     font-weight: 500;
 }
 
+/* Sales Sub-tabs */
+.sales-subtabs {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3) 0;
+    border-bottom: 1px solid var(--gray-200);
+    margin-bottom: var(--spacing-4);
+}
+
+.sales-subtab {
+    background: none;
+    border: none;
+    padding: var(--spacing-3) var(--spacing-4);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--gray-600);
+    transition: var(--transition-all);
+    position: relative;
+    white-space: nowrap;
+}
+
+.sales-subtab:hover {
+    color: var(--primary-red);
+    background: var(--gray-50);
+    transform: translateY(-1px);
+}
+
+.sales-subtab.active {
+    color: var(--primary-red);
+    background: rgba(196, 30, 58, 0.1);
+}
+
+.sales-subtab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--primary-red);
+    border-radius: 1px 1px 0 0;
+}
+
 /* Responsive Design - Enhanced */
 @media (max-width: 1024px) {
     .pos-layout {

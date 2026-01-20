@@ -204,60 +204,12 @@
       "emoji": "🚚"
     }
   ],
-  "orders": [
-    {
-      "id": "ORD-001",
-      "timestamp": "2026-01-12T13:30:00Z",
-      "items": [
-        {
-          "productId": "chicken_biryani",
-          "quantity": 2,
-          "price": 320
-        },
-        {
-          "productId": "naan",
-          "quantity": 4,
-          "price": 40
-        }
-      ],
-      "subtotal": 800,
-      "tax": 0,
-      "total": 800,
-      "paymentMethod": "cash",
-      "orderType": "dinein"
-    },
-    {
-      "id": "ORD-002",
-      "timestamp": "2026-01-12T14:15:00Z",
-      "items": [
-        {
-          "productId": "chicken_karahi",
-          "quantity": 1,
-          "price": 450
-        },
-        {
-          "productId": "roti",
-          "quantity": 5,
-          "price": 30
-        },
-        {
-          "productId": "pepsi",
-          "quantity": 2,
-          "price": 60
-        }
-      ],
-      "subtotal": 690,
-      "tax": 0,
-      "total": 690,
-      "paymentMethod": "easypaisa",
-      "orderType": "takeaway"
-    }
-  ],
+  "orders": [],
   "settings": {
     "currency": "PKR",
     "receiptWidth": 80,
     "autoPrint": false,
     "showTax": false,
-    "nextOrderNumber": 3
+    "nextOrderNumber": 1
   }
 }
