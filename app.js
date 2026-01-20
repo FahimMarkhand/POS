@@ -2238,9 +2238,10 @@ class POSSystem {
                         flex: 1;
                         text-align: left;
                         padding-right: 1mm;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        white-space: nowrap;
+                        /* Allow text to wrap to the next line instead of cutting it with ... */
+                        white-space: normal; 
+                        overflow: visible;
+                        word-wrap: break-word;
                     }
                     
                     .col-qty {
